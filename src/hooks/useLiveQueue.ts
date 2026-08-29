@@ -48,7 +48,7 @@ export const useLiveQueue = (centreId?: string, bookingDateId?: string) => {
 
     if (!centreId || !bookingDateId) return;
 
-    const channelName = `live-queue-${centreId}-${bookingDateId}`;
+    const channelName = `live-queue-${centreId}-${bookingDateId}-${Math.random().toString(36).substring(7)}`;
     const channel = supabase
       .channel(channelName)
       .on(

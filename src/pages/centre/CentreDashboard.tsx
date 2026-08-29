@@ -2,8 +2,65 @@ import React, { useEffect, useState } from 'react';
 import { 
   Loader, Building, RefreshCw, AlertCircle, CheckCircle2, 
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
-  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle
+  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar
 } from 'lucide-react';
+
+const AllBookingsTable = ({ centreId, bookingDateId }: { centreId?: string; bookingDateId?: string }) => {
+  const { queue: allBookings, loading } = useLiveQueue(centreId, bookingDateId);
+
+  if (loading) return <div className="p-4 text-center text-sm text-slate-500">Loading bookings...</div>;
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden relative shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-left text-slate-600">
+          <thead className="text-xs text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200">
+            <tr>
+              <th className="px-6 py-4 font-extrabold tracking-wider">Token</th>
+              <th className="px-6 py-4 font-extrabold tracking-wider">Farmer</th>
+              <th className="px-6 py-4 font-extrabold tracking-wider">Crop & Qty</th>
+              <th className="px-6 py-4 font-extrabold tracking-wider text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allBookings.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-12 text-center">
+                  <p className="text-slate-500 font-medium">No bookings found for this date.</p>
+                </td>
+              </tr>
+            ) : (
+              allBookings.map((booking) => (
+                <tr key={booking.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-bold text-slate-900">{booking.token}</span>
+                  </td>
+                  <td className="px-6 py-4 font-medium">{booking.users?.name}</td>
+                  <td className="px-6 py-4">
+                    {booking.product_name} <span className="text-slate-400">({booking.quantity} kg)</span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      booking.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                      booking.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                      booking.status === 'called' ? 'bg-indigo-100 text-indigo-800 animate-pulse' :
+                      booking.status === 'no_show' ? 'bg-red-100 text-red-800' :
+                      booking.status === 'cancelled' ? 'bg-slate-100 text-slate-800' :
+                      'bg-amber-100 text-amber-800'
+                    }`}>
+                      {booking.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
@@ -35,7 +92,7 @@ interface Product {
 
 
 const CentreDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'queue' | 'settings' | 'payouts'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'all_bookings' | 'settings' | 'payouts'>('queue');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -43,6 +100,8 @@ const CentreDashboard: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [centre, setCentre] = useState<Centre | null>(null);
   const [todaySlotId, setTodaySlotId] = useState<string | undefined>(undefined);
+  const [selectedAllBookingsDateId, setSelectedAllBookingsDateId] = useState<string | undefined>(undefined);
+  const [availableDates, setAvailableDates] = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [procurements, setProcurements] = useState<any[]>([]);
 
@@ -151,21 +210,25 @@ const CentreDashboard: React.FC = () => {
       setDistrictsList(districtsRes.data || []);
       setBlocksList(blocksRes.data || []);
 
-      // 3. Find today's booking date slot
+      // 3. Find all booking date slots
       const now = new Date();
       const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
-      const { data: todaySlot } = await supabase
+      const { data: allSlots } = await supabase
         .from('booking_dates')
         .select('*')
         .eq('centre_id', centreId)
-        .eq('date', localDateStr)
-        .single();
+        .order('date', { ascending: false });
 
-      if (todaySlot) {
-        setTodaySlotId(todaySlot.id);
+      setAvailableDates(allSlots || []);
+
+      if (allSlots && allSlots.length > 0) {
+        const todayMatch = allSlots.find(s => s.date === localDateStr);
+        setTodaySlotId(todayMatch ? todayMatch.id : undefined);
+        setSelectedAllBookingsDateId(todayMatch ? todayMatch.id : allSlots[0].id);
       } else {
         setTodaySlotId(undefined);
+        setSelectedAllBookingsDateId(undefined);
       }
 
       // 4. Fetch Products List
@@ -309,6 +372,7 @@ const CentreDashboard: React.FC = () => {
       });
 
       triggerNotification(`Token ${nextBooked.token} has been called.`);
+      setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -335,6 +399,7 @@ const CentreDashboard: React.FC = () => {
       });
 
       triggerNotification('Procurement weighment started.');
+      setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -361,6 +426,7 @@ const CentreDashboard: React.FC = () => {
       });
 
       triggerNotification('Farmer marked as no-show.');
+      setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -451,6 +517,7 @@ const CentreDashboard: React.FC = () => {
       // Instead of closing immediately, show success view
       setCompletedProcurementId(proc.id);
       triggerNotification('Procurement completed successfully!');
+      setLoading(false);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -683,6 +750,17 @@ const CentreDashboard: React.FC = () => {
           Queue Console
         </button>
         <button
+          onClick={() => setActiveTab('all_bookings')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'all_bookings'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          All Bookings
+        </button>
+        <button
           onClick={() => setActiveTab('payouts')}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
             activeTab === 'payouts'
@@ -737,7 +815,7 @@ const CentreDashboard: React.FC = () => {
           <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 flex flex-wrap justify-between items-center gap-4 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
             <div>
               <h2 className="font-bold text-slate-800 text-lg">Queue Controller</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Call next farmers in sequence and manage gate admissions.</p>
+              <p className="text-xs text-slate-400 mt-0.5 mb-3">Call next farmers in sequence and manage gate admissions.</p>
             </div>
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 mt-4 sm:mt-0">
               <button
@@ -916,6 +994,43 @@ const CentreDashboard: React.FC = () => {
       )}
 
       {/* TAB 2: PAYOUTS MANAGEMENT */}
+      {/* TAB 2: ALL BOOKINGS */}
+      {activeTab === 'all_bookings' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 transition-all duration-300">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">All Bookings</h2>
+                <p className="text-xs text-slate-500 mt-0.5">View past and future booking records for this depot.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 font-bold uppercase">Date:</span>
+                <select
+                  value={selectedAllBookingsDateId || ''}
+                  onChange={(e) => setSelectedAllBookingsDateId(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5 font-semibold cursor-pointer"
+                >
+                  {availableDates.length === 0 && <option value="">No dates found</option>}
+                  {availableDates.map((dateObj: any) => {
+                    const n = new Date();
+                    const localDateStr = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+                    const isToday = dateObj.date === localDateStr;
+                    return (
+                      <option key={dateObj.id} value={dateObj.id}>
+                        {new Date(dateObj.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                        {isToday ? ' (Today)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
+            <AllBookingsTable centreId={centre?.id} bookingDateId={selectedAllBookingsDateId} />
+          </div>
+        </div>
+      )}
+
       {activeTab === 'payouts' && (
         <div className="bg-white rounded-2xl border-2 border-indigo-100 overflow-hidden shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
           <div className="p-6 border-b border-slate-100">

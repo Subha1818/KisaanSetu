@@ -127,7 +127,7 @@ const FarmerDashboard: React.FC = () => {
   
   const myTokenNum = activeBooking ? parseInt(activeBooking.token.split('-')[1]) || 0 : 0;
   const peopleAhead = queue.filter(b => 
-    (b.status === 'booked' || b.status === 'called') && 
+    (b.status === 'booked' || b.status === 'called' || b.status === 'in_progress') && 
     (parseInt(b.token.split('-')[1]) || 0) < myTokenNum
   ).length;
 

@@ -428,14 +428,17 @@ const BookAppointment: React.FC = () => {
         {!loading && step === 2 && (
           <div className="space-y-6">
             {filteredCentres.length === 0 ? (
-              <div className="text-center py-8 space-y-4">
-                <AlertCircle className="w-12 h-12 text-slate-400 mx-auto" />
-                <p className="text-slate-500 font-medium">
+              <div className="text-center py-8 px-4 space-y-3 bg-red-50 rounded-2xl border border-red-100 mt-4">
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+                <h3 className="text-red-700 font-bold text-lg">
+                  No Procurement Center found nearby
+                </h3>
+                <p className="text-red-600/80 text-sm font-medium max-w-sm mx-auto">
                   {t('booking.no_centres', { block: blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'selected block' })}
                 </p>
                 <button
                   onClick={() => setStep(1)}
-                  className="text-emerald-600 hover:underline font-semibold"
+                  className="text-red-700 hover:text-red-900 hover:underline font-bold pt-2 inline-block"
                 >
                   {t('booking.mod_filters')}
                 </button>

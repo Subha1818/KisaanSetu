@@ -105,13 +105,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="hidden md:flex items-center gap-4">
 
               {/* Language Switcher */}
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-400" aria-hidden="true" />
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 bg-white/80 rounded-xl hover:border-emerald-300 transition-colors shadow-sm">
+                <Globe className="w-4 h-4 text-emerald-600" aria-hidden="true" />
                 <select
                   value={i18n.language}
                   onChange={changeLanguage}
                   aria-label="Select Language"
-                  className="bg-transparent border-none text-sm font-semibold text-slate-700 focus:ring-0 cursor-pointer"
+                  className="bg-transparent border-none text-sm font-semibold text-slate-700 focus:ring-0 cursor-pointer p-0 pr-6"
                 >
                   <option value="en">English</option>
                   <option value="hi">हिन्दी (Hindi)</option>
@@ -149,8 +149,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-slate-100 rounded-lg px-2 py-1 mr-2">
-                <Globe className="w-4 h-4 text-slate-500" />
+              <div className="flex items-center gap-1 bg-white/80 border border-slate-200 rounded-xl px-2 py-1 mr-2 shadow-sm">
+                <Globe className="w-4 h-4 text-emerald-600" />
                 <select
                   value={i18n.language}
                   onChange={changeLanguage}
