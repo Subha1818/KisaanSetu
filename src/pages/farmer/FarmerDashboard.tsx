@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Sprout, Building, Users, Play, X, RefreshCw, XCircle, Download, CheckCircle2, History } from 'lucide-react';
+import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Sprout, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
 import { RescheduleModal } from '../../components/farmer/RescheduleModal';

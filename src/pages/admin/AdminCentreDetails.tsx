@@ -46,7 +46,7 @@ const AdminCentreDetails: React.FC = () => {
           .eq('id', id)
           .single();
         if (centreErr) throw centreErr;
-        setCentre(centreData);
+        setCentre(centreData as unknown as CentreDetails);
 
         // 2. Fetch distinct farmers served
         const { data: farmersData, error: farmersErr } = await supabase

@@ -11,7 +11,6 @@ import {
   Wallet,
   ArrowRight,
   Building,
-  Award,
   Phone,
   Smartphone
 } from 'lucide-react';

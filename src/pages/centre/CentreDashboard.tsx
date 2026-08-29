@@ -36,11 +36,10 @@ interface Product {
 const CentreDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'queue' | 'settings' | 'payouts'>('queue');
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Core Data
+  const [session, setSession] = useState<any>(null);
   const [centre, setCentre] = useState<Centre | null>(null);
   const [todaySlotId, setTodaySlotId] = useState<string | undefined>(undefined);
   const [products, setProducts] = useState<Product[]>([]);
@@ -76,7 +75,7 @@ const CentreDashboard: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Live Queue Subscription
-  const { queue: bookings, loading: queueLoading } = useLiveQueue(centre?.id, todaySlotId);
+  const { queue: bookings } = useLiveQueue(centre?.id, todaySlotId);
 
   // Fetch core session and centre mapping
   const fetchCentreData = async (showLoading = true) => {
@@ -84,72 +83,62 @@ const CentreDashboard: React.FC = () => {
       if (showLoading) setLoading(true);
       setError(null);
 
+      // 1. Get staff mapping for user
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession?.user) {
-        setError('Staff authentication session not found.');
-        return;
-      }
+      if (!currentSession?.user) throw new Error('Not authenticated');
       setSession(currentSession);
 
-      // 1. Get staff mapping for user
       const { data: staffRow, error: staffErr } = await supabase
         .from('staff')
         .select('centre_id')
         .eq('user_id', currentSession.user.id)
         .single();
 
-      if (staffErr || !staffRow?.centre_id) {
-        setError('You are not currently assigned to any procurement centre. Please contact an admin.');
-        setLoading(false);
-        return;
+      if (staffErr || !staffRow) {
+        throw new Error('Staff member is not assigned to any procurement depot.');
       }
 
       const centreId = staffRow.centre_id;
 
-      // 2. Fetch Centre details
-      const { data: centreDetails, error: centreErr } = await supabase
+      // 2. Fetch centre details with joins to geo_blocks
+      const { data: centreRow, error: centreErr } = await supabase
         .from('procurement_centres')
-        .select('*, geo_blocks(*)')
+        .select(`
+          *,
+          geo_blocks (
+            block_name,
+            district_name,
+            state_name,
+            state_code,
+            district_code,
+            block_code
+          )
+        `)
         .eq('id', centreId)
         .single();
 
-      if (centreErr) throw new Error(centreErr.message);
-      setCentre(centreDetails);
-      
-      // Prefill settings form
-      setDailyCapacity(centreDetails.daily_capacity);
-      setCentreStatus(centreDetails.status);
-      setWindowStart(centreDetails.booking_window_start);
-      setWindowEnd(centreDetails.booking_window_end);
+      if (centreErr || !centreRow) throw new Error('Could not load depot operational records.');
 
-      // Parallel location list prefill query
-      const statesPromise = supabase.from('distinct_states').select('*').order('state_name', { ascending: true });
-      let districtsPromise: any = Promise.resolve({ data: [] });
-      let blocksPromise: any = Promise.resolve({ data: [] });
+      setCentre(centreRow);
+      setDailyCapacity(centreRow.daily_capacity);
+      setCentreStatus(centreRow.status);
+      setWindowStart(centreRow.booking_window_start);
+      setWindowEnd(centreRow.booking_window_end);
 
-      if (centreDetails.geo_blocks) {
-        const { state_code, district_code, block_code } = centreDetails.geo_blocks;
-        setSelectedStateCode(state_code.toString());
-        setSelectedDistrictCode(district_code.toString());
-        setSelectedBlockCode(block_code.toString());
+      // Initialize dropdown selections
+      const blockCode = centreRow.block_code?.toString() || '';
+      const districtCode = centreRow.geo_blocks?.district_code?.toString() || '';
+      const stateCode = centreRow.geo_blocks?.state_code?.toString() || '';
 
-        districtsPromise = supabase
-          .from('distinct_districts')
-          .select('*')
-          .eq('state_code', state_code)
-          .order('district_name', { ascending: true });
+      setSelectedStateCode(stateCode);
+      setSelectedDistrictCode(districtCode);
+      setSelectedBlockCode(blockCode);
 
-        blocksPromise = supabase
-          .from('geo_blocks')
-          .select('block_code, block_name')
-          .eq('district_code', district_code)
-          .order('block_name', { ascending: true });
-      }
-
+      // Fetch states, districts, and blocks for cascading dropdowns
       const [statesRes, districtsRes, blocksRes] = await Promise.all([
-        statesPromise,
-        districtsPromise,
-        blocksPromise
+        supabase.rpc('get_lgd_states'),
+        stateCode ? supabase.rpc('get_lgd_districts', { p_state_code: parseInt(stateCode) }) : Promise.resolve({ data: [] }),
+        districtCode ? supabase.rpc('get_lgd_blocks', { p_district_code: parseInt(districtCode) }) : Promise.resolve({ data: [] })
       ]);
 
       setStatesList(statesRes.data || []);
@@ -160,7 +149,7 @@ const CentreDashboard: React.FC = () => {
       const now = new Date();
       const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
-      const { data: todaySlot, error: slotErr } = await supabase
+      const { data: todaySlot } = await supabase
         .from('booking_dates')
         .select('*')
         .eq('centre_id', centreId)

@@ -45,14 +45,6 @@ export const generateProcurementReceipt = async (procurementId: string) => {
     let yPos = margin;
     const pageWidth = doc.internal.pageSize.width;
 
-    // Helper for adding text
-    const addLine = (text: string, x: number, yOffset: number, size = 12, isBold = false) => {
-      doc.setFontSize(size);
-      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-      doc.text(text, x, yPos + yOffset);
-      return yOffset + (size * 0.5); // return approximate height
-    };
-
     // Header
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);

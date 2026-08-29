@@ -114,8 +114,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="bg-transparent border-none text-sm font-semibold text-slate-700 focus:ring-0 cursor-pointer"
                 >
                   <option value="en">English</option>
-                  <option value="hi">हिंदी (HI)</option>
-                  <option value="bn">বাংলা (BN)</option>
+                  <option value="hi">हिन्दी (Hindi)</option>
+                  <option value="bn">বাংলা (Bengali)</option>
+                  <option value="mr">मराठी (Marathi)</option>
+                  <option value="te">తెలుగు (Telugu)</option>
+                  <option value="ta">தமிழ் (Tamil)</option>
+                  <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
                 </select>
               </div>
 
@@ -152,9 +156,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   onChange={changeLanguage}
                   className="bg-transparent border-none text-xs font-semibold text-slate-700 focus:ring-0 cursor-pointer pl-1 pr-6 py-1"
                 >
-                  <option value="en">EN</option>
-                  <option value="hi">HI</option>
-                  <option value="bn">BN</option>
+                  <option value="en">English</option>
+                  <option value="hi">हिन्दी</option>
+                  <option value="bn">বাংলা</option>
+                  <option value="mr">मराठी</option>
+                  <option value="te">తెలుగు</option>
+                  <option value="ta">தமிழ்</option>
+                  <option value="pa">ਪੰਜਾਬੀ</option>
                 </select>
               </div>
               <button

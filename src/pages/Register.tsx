@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Sprout, AlertCircle, CheckCircle2, Loader, ArrowLeft, Clock, Wallet, Languages, Building2, Shield } from 'lucide-react';
+import { Sprout, AlertCircle, CheckCircle2, Loader, ArrowLeft, Building2, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 
