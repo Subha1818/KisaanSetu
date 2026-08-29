@@ -670,7 +670,7 @@ const CentreDashboard: React.FC = () => {
       )}
 
       {/* Main Tab Links */}
-      <div className="flex border-b border-slate-200 gap-1 bg-white p-1 rounded-xl border">
+      <div className="flex border-b border-slate-200 gap-1 bg-white p-1 rounded-xl border overflow-x-auto whitespace-nowrap">
         <button
           onClick={() => setActiveTab('queue')}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
@@ -739,10 +739,10 @@ const CentreDashboard: React.FC = () => {
               <h2 className="font-bold text-slate-800 text-lg">Queue Controller</h2>
               <p className="text-xs text-slate-400 mt-0.5">Call next farmers in sequence and manage gate admissions.</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 mt-4 sm:mt-0">
               <button
                 onClick={() => setIsScannerOpen(true)}
-                className="px-6 py-3.5 bg-white border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-700 font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm"
+                className="w-full sm:w-auto px-6 py-3.5 bg-white border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-700 font-bold rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 text-sm"
               >
                 <Camera className="w-4 h-4" />
                 Scan Token
@@ -750,7 +750,7 @@ const CentreDashboard: React.FC = () => {
               <button
                 onClick={handleCallNext}
                 disabled={waitingToday === 0}
-                className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-2 text-sm disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex justify-center items-center gap-2 text-sm disabled:opacity-50"
               >
                 <Volume2 className="w-4 h-4" />
                 Call Next Token
@@ -790,11 +790,11 @@ const CentreDashboard: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                       {b.status === 'called' && (
                         <button
                           onClick={() => handleStartProcurement(b.id)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm inline-flex items-center gap-1.5 shadow-sm transition-all"
+                          className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
                         >
                           <Play className="w-4 h-4" />
                           Start
@@ -803,7 +803,7 @@ const CentreDashboard: React.FC = () => {
                       {b.status === 'in_progress' && (
                         <button
                           onClick={() => setCompletingBooking(b)}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm inline-flex items-center gap-1.5 shadow-sm transition-all"
+                          className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
                         >
                           <Check className="w-4 h-4" />
                           Complete
@@ -812,7 +812,7 @@ const CentreDashboard: React.FC = () => {
                       {(b.status === 'booked' || b.status === 'called') && (
                         <button
                           onClick={() => handleSkipBooking(b.id, b.status)}
-                          className="px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-lg text-sm inline-flex items-center gap-1.5 shadow-sm transition-all"
+                          className="w-full sm:w-auto px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
                         >
                           <AlertTriangle className="w-4 h-4" />
                           Mark No-Show
