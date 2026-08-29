@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { supabase } from '../lib/supabaseClient';
+import QRCode from 'qrcode';
 
 export const generateProcurementReceipt = async (procurementId: string) => {
   try {
@@ -167,6 +168,149 @@ export const generateProcurementReceipt = async (procurementId: string) => {
     return true;
   } catch (err) {
     console.error('Error generating PDF receipt:', err);
+    throw err;
+  }
+};
+
+export const generateTokenPDF = async (bookingId: string) => {
+  try {
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        booking_dates ( date ),
+        users ( name, mobile_number ),
+        procurement_centres ( 
+          name, 
+          geo_blocks (
+            district_name,
+            block_name,
+            state_name
+          ) 
+        )
+      `)
+      .eq('id', bookingId)
+      .single();
+
+    if (error || !booking) {
+      throw new Error(error?.message || 'Failed to fetch booking details');
+    }
+
+    const centre = booking.procurement_centres as any;
+    const farmer = booking.users as any;
+    const geo = centre.geo_blocks || {};
+
+    const doc = new jsPDF();
+    const margin = 20;
+    let yPos = margin;
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(5, 150, 105); // emerald-600
+    doc.text('AgriProcure', margin, yPos);
+    yPos += 10;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Procurement Token & Gate Pass', margin, yPos);
+    
+    // Right side Header (Centre Info)
+    doc.setFontSize(10);
+    doc.text(centre.name || 'Procurement Centre', pageWidth - margin, yPos - 10, { align: 'right' });
+    const locationStr = [geo.block_name, geo.district_name].filter(Boolean).join(', ');
+    if (locationStr) {
+      doc.text(locationStr, pageWidth - margin, yPos - 5, { align: 'right' });
+    }
+    
+    yPos += 15;
+    
+    // Divider
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 15;
+
+    // Token Information
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Token Details', margin, yPos);
+    yPos += 10;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const dateStr = new Date(booking.booking_dates?.date).toLocaleDateString();
+    
+    doc.text(`Token Number: ${booking.token}`, margin, yPos);
+    doc.text(`Scheduled Date: ${dateStr}`, pageWidth / 2, yPos);
+    yPos += 8;
+    doc.text(`Farmer Name: ${farmer.name}`, margin, yPos);
+    doc.text(`Mobile: ${farmer.mobile_number}`, pageWidth / 2, yPos);
+    yPos += 8;
+    doc.text(`Product: ${booking.product_name}`, margin, yPos);
+    doc.text(`Estimated Quantity: ${booking.quantity} kg`, pageWidth / 2, yPos);
+    
+    yPos += 20;
+
+    // Generate and add QR Code
+    try {
+      const qrDataUrl = await QRCode.toDataURL(booking.id, {
+        width: 100,
+        margin: 1,
+        color: {
+          dark: '#0f172a', // slate-900
+          light: '#ffffff'
+        }
+      });
+      // Add QR image to PDF
+      doc.addImage(qrDataUrl, 'PNG', margin, yPos, 40, 40);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Scan for official verification at the gate', margin + 45, yPos + 20);
+      yPos += 50;
+    } catch (qrError) {
+      console.error('Failed to generate QR code for PDF:', qrError);
+      yPos += 10;
+    }
+
+    // Divider
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 15;
+
+    // Instructions
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Gate Pass Instructions', margin, yPos);
+    yPos += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    
+    const instructions = [
+      '1. Present this token (digital or printed) along with your physical ID card at the centre gate.',
+      '2. Ensure your crop meets quality standards before joining the queue.',
+      '3. Your payment will be initiated directly to your registered bank account upon successful procurement.',
+      '4. Please arrive on your scheduled date. Late arrivals may not be accommodated.'
+    ];
+
+    instructions.forEach(instruction => {
+      const splitLines = doc.splitTextToSize(instruction, pageWidth - (margin * 2));
+      doc.text(splitLines, margin, yPos);
+      yPos += splitLines.length * 6;
+    });
+
+    // Save PDF
+    doc.save(`Token_${booking.token}_${dateStr.replace(/\//g, '-')}.pdf`);
+    
+    return true;
+  } catch (err) {
+    console.error('Error generating PDF token:', err);
     throw err;
   }
 };

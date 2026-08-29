@@ -5,7 +5,8 @@ import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
 import { RescheduleModal } from '../../components/farmer/RescheduleModal';
 import { useTranslation } from 'react-i18next';
-import { generateProcurementReceipt } from '../../utils/pdfGenerator';
+import { generateProcurementReceipt, generateTokenPDF } from '../../utils/pdfGenerator';
+import { QRCodeSVG } from 'qrcode.react';
 import { DashboardBackground } from '../../components/DashboardBackground';
 
 const FarmerDashboard: React.FC = () => {
@@ -232,11 +233,11 @@ const FarmerDashboard: React.FC = () => {
 
             {/* Token Highlight */}
             <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-emerald-600 text-white rounded-xl shadow-md">
-                  <Sprout className="w-8 h-8" />
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-200 shrink-0">
+                  <QRCodeSVG value={activeBooking.id} size={80} level="M" />
                 </div>
-                <div>
+                <div className="text-center sm:text-left">
                   <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">{t('dashboard.queue_token')}</p>
                   <p className="text-3xl font-extrabold text-slate-900 mt-1">{activeBooking.token}</p>
                 </div>
@@ -318,6 +319,24 @@ const FarmerDashboard: React.FC = () => {
             </div>
             
             <div className="mt-6 pt-6 border-t border-slate-100 space-y-3">
+              <button 
+                onClick={async () => {
+                  try {
+                    setDownloadingId('token');
+                    await generateTokenPDF(activeBooking.id);
+                  } catch (err) {
+                    setError('Failed to download token PDF.');
+                  } finally {
+                    setDownloadingId(null);
+                  }
+                }}
+                disabled={downloadingId === 'token'}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-sm shadow-md"
+              >
+                {downloadingId === 'token' ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Download Pass PDF
+              </button>
+              
               {isCancellable ? (
                 <>
                   <button 

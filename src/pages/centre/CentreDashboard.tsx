@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { 
   Loader, Building, RefreshCw, AlertCircle, CheckCircle2, 
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
-  Volume2, Trash2, Plus, Edit3, Download
+  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle
 } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
 import { generateProcurementReceipt } from '../../utils/pdfGenerator';
@@ -73,6 +74,11 @@ const CentreDashboard: React.FC = () => {
   const [newProductName, setNewProductName] = useState('');
   const [newMaxQty, setNewMaxQty] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Scanner states
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedBookingId, setScannedBookingId] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   // Live Queue Subscription
   const { queue: bookings } = useLiveQueue(centre?.id, todaySlotId);
@@ -358,6 +364,23 @@ const CentreDashboard: React.FC = () => {
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
+    }
+  };
+
+  const handleScan = (result: any) => {
+    if (result && result.length > 0 && result[0].rawValue) {
+      const scannedId = result[0].rawValue;
+      const found = bookings.find(b => b.id === scannedId);
+      if (!found) {
+        setScanError('Invalid token: Not found in today\'s active queue.');
+      } else if (found.status === 'completed' || found.status === 'no_show' || found.status === 'cancelled') {
+        setScanError(`Invalid token: Booking is already ${found.status.toUpperCase()}.`);
+      } else {
+        setScannedBookingId(found.id);
+        setIsScannerOpen(false);
+        setScanError(null);
+        triggerNotification(`Token ${found.token} successfully scanned and selected.`);
+      }
     }
   };
 
@@ -716,15 +739,91 @@ const CentreDashboard: React.FC = () => {
               <h2 className="font-bold text-slate-800 text-lg">Queue Controller</h2>
               <p className="text-xs text-slate-400 mt-0.5">Call next farmers in sequence and manage gate admissions.</p>
             </div>
-            <button
-              onClick={handleCallNext}
-              disabled={waitingToday === 0}
-              className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-2 text-sm disabled:opacity-50"
-            >
-              <Volume2 className="w-4 h-4" />
-              Call Next Token
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsScannerOpen(true)}
+                className="px-6 py-3.5 bg-white border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-700 font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm"
+              >
+                <Camera className="w-4 h-4" />
+                Scan Token
+              </button>
+              <button
+                onClick={handleCallNext}
+                disabled={waitingToday === 0}
+                className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-2 text-sm disabled:opacity-50"
+              >
+                <Volume2 className="w-4 h-4" />
+                Call Next Token
+              </button>
+            </div>
           </div>
+
+          {/* Scanned Token Display */}
+          {scannedBookingId && (
+            <div className="bg-emerald-50 rounded-2xl border-2 border-emerald-200 p-6 shadow-sm shadow-emerald-900/5 mb-6 relative">
+              <button 
+                onClick={() => setScannedBookingId(null)}
+                className="absolute top-4 right-4 text-emerald-600 hover:text-emerald-800"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-emerald-900 text-lg">Verified Token</h3>
+              </div>
+              
+              {(() => {
+                const b = bookings.find(bk => bk.id === scannedBookingId);
+                if (!b) return null;
+                return (
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex gap-6 items-center">
+                      <div className="bg-emerald-100 text-emerald-800 p-4 rounded-xl text-center">
+                        <span className="block text-xs uppercase font-bold opacity-70">Token</span>
+                        <span className="block text-2xl font-black">{b.token}</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-emerald-950 text-lg">{b.users?.name}</p>
+                        <p className="text-sm text-emerald-800">{b.product_name} • {b.quantity} kg</p>
+                        <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-white text-emerald-700 border border-emerald-200">
+                          {b.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {b.status === 'called' && (
+                        <button
+                          onClick={() => handleStartProcurement(b.id)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm inline-flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <Play className="w-4 h-4" />
+                          Start
+                        </button>
+                      )}
+                      {b.status === 'in_progress' && (
+                        <button
+                          onClick={() => setCompletingBooking(b)}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm inline-flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <Check className="w-4 h-4" />
+                          Complete
+                        </button>
+                      )}
+                      {(b.status === 'booked' || b.status === 'called') && (
+                        <button
+                          onClick={() => handleSkipBooking(b.id, b.status)}
+                          className="px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-lg text-sm inline-flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <AlertTriangle className="w-4 h-4" />
+                          Mark No-Show
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Bookings Queue Table */}
           <div className="bg-white rounded-2xl border-2 border-indigo-100 overflow-hidden shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
@@ -1255,6 +1354,54 @@ const CentreDashboard: React.FC = () => {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scanner Modal */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[80vh] sm:h-auto max-h-[800px]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-indigo-600" />
+                Scan Token QR Code
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsScannerOpen(false);
+                  setScanError(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 flex-1 flex flex-col">
+              <p className="text-sm text-slate-500 mb-4 text-center">
+                Point your camera at the farmer's token QR code. Make sure you are using a secure connection (HTTPS) for camera access.
+              </p>
+              
+              {scanError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <span>{scanError}</span>
+                </div>
+              )}
+              
+              <div className="relative rounded-xl overflow-hidden bg-black flex-1 min-h-[300px] border border-slate-200 shadow-inner">
+                <Scanner 
+                  onScan={handleScan}
+                  onError={(err: any) => setScanError(err?.message || 'Camera error. Please ensure camera permissions are granted.')}
+                  components={{
+                    onOff: true,
+                    torch: true,
+                    zoom: true,
+                    finder: true,
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

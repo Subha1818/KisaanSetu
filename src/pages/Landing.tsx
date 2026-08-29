@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-  Sprout, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
-  Languages, 
+import {
+  Sprout,
+  MapPin,
+  Calendar,
+  Clock,
+  CheckCircle,
+  Languages,
   Wallet,
   ArrowRight,
   Building,
@@ -54,18 +54,18 @@ const Landing: React.FC = () => {
               {/* Sun */}
               <circle cx="380" cy="100" r="50" fill="#D97706" fillOpacity="0.1" />
               <circle cx="380" cy="100" r="30" fill="#D97706" fillOpacity="0.8" />
-              
+
               {/* Field Layers - Changed from Green to Warm Amber/Wheat tones */}
               <path d="M0 320C120 280 240 340 480 300V360H0V320Z" fill="#FCD34D" fillOpacity="0.3" />
               <path d="M0 340C160 300 320 350 480 320V360H0V340Z" fill="#F59E0B" fillOpacity="0.2" />
-              
+
               {/* Wheat Silhouettes */}
               <path d="M280 320C285 280 295 240 310 200" stroke="#B45309" strokeWidth="4" strokeLinecap="round" />
               <path d="M275 240L295 230M280 260L300 250M285 280L305 270" stroke="#B45309" strokeWidth="4" strokeLinecap="round" />
-              
+
               <path d="M330 330C335 290 345 250 360 210" stroke="#B45309" strokeWidth="4" strokeLinecap="round" />
               <path d="M325 250L345 240M330 270L350 260M335 290L355 280" stroke="#B45309" strokeWidth="4" strokeLinecap="round" />
-              
+
               <path d="M380 310C385 270 395 230 410 190" stroke="#B45309" strokeWidth="4" strokeLinecap="round" />
               <path d="M375 230L395 220M380 250L400 240M385 270L405 260" stroke="#B45309" strokeWidth="4" strokeLinecap="round" />
 
@@ -84,7 +84,7 @@ const Landing: React.FC = () => {
         {/* Subtle background decoration */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-emerald-800/30 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 rounded-full bg-emerald-950/40 blur-2xl"></div>
-        
+
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10">
           {/* Left: Mockup Card */}
           <div className="relative mx-auto w-full max-w-md lg:ml-0 lg:mr-auto mt-4 ml-4">
@@ -101,7 +101,7 @@ const Landing: React.FC = () => {
                   A-104
                 </div>
               </div>
-              
+
               <div className="space-y-4 mb-6 text-left">
                 <div className="flex justify-between items-center border-b border-slate-50 pb-3">
                   <p className="text-slate-500 font-medium">Date</p>
@@ -116,14 +116,14 @@ const Landing: React.FC = () => {
                   <p className="font-bold text-slate-800">Ramesh Kumar</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 justify-center w-full bg-emerald-50 text-emerald-700 py-3 rounded-xl border border-emerald-100 font-bold shadow-sm">
                 <CheckCircle className="w-5 h-5 text-emerald-500" />
                 Payment Credited
               </div>
             </div>
           </div>
-          
+
           {/* Right: Article Text */}
           <div className="space-y-6 text-center lg:text-left text-white">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
@@ -138,125 +138,125 @@ const Landing: React.FC = () => {
 
       <div className="flex flex-col space-y-24 py-16">
 
-      {/* How It Works Section */}
-      <section className="max-w-7xl mx-auto px-4 w-full">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-slate-900">{t('landing.how_it_works_title')}</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative">
-          {/* Desktop Connecting Line */}
-          <div className="hidden md:block absolute top-8 left-[10%] right-[10%] h-0.5 bg-amber-200 -z-10"></div>
-          
-          {/* Step 1 */}
-          <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
-              <Phone className="w-8 h-8" />
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">1</div>
-            </div>
-            <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_1')}</p>
+        {/* How It Works Section */}
+        <section className="max-w-7xl mx-auto px-4 w-full">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900">{t('landing.how_it_works_title')}</h2>
           </div>
 
-          {/* Step 2 */}
-          <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
-              <MapPin className="w-8 h-8" />
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">2</div>
-            </div>
-            <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_2')}</p>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative">
+            {/* Desktop Connecting Line */}
+            <div className="hidden md:block absolute top-8 left-[10%] right-[10%] h-0.5 bg-amber-200 -z-10"></div>
 
-          {/* Step 3 */}
-          <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
-              <Calendar className="w-8 h-8" />
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">3</div>
-            </div>
-            <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_3')}</p>
-          </div>
-
-          {/* Step 4 */}
-          <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
-              <Smartphone className="w-8 h-8" />
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">4</div>
-            </div>
-            <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_4')}</p>
-          </div>
-
-          {/* Step 5 */}
-          <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
-              <CheckCircle className="w-8 h-8" />
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">5</div>
-            </div>
-            <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_5')}</p>
-          </div>
-
-          {/* Mobile Connecting Line */}
-          <div className="md:hidden absolute top-[10%] bottom-[10%] left-1/2 w-0.5 bg-amber-200 -z-10 -translate-x-1/2"></div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="bg-emerald-900 text-white rounded-3xl p-8 md:p-12 max-w-5xl mx-auto w-full">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold">{t('landing.why_use_title')}</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-emerald-800/50 p-6 rounded-2xl flex items-start gap-4 hover:bg-emerald-800/70 transition-colors">
-            <div className="p-3 bg-amber-500 rounded-xl shrink-0">
-              <Clock className="w-6 h-6 text-emerald-900" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">{t('landing.benefit_1')}</h3>
-            </div>
-          </div>
-          <div className="bg-emerald-800/50 p-6 rounded-2xl flex items-start gap-4 hover:bg-emerald-800/70 transition-colors">
-            <div className="p-3 bg-amber-500 rounded-xl shrink-0">
-              <Wallet className="w-6 h-6 text-emerald-900" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">{t('landing.benefit_2')}</h3>
-            </div>
-          </div>
-          <div className="bg-emerald-800/50 p-6 rounded-2xl flex items-start gap-4 hover:bg-emerald-800/70 transition-colors">
-            <div className="p-3 bg-amber-500 rounded-xl shrink-0">
-              <Languages className="w-6 h-6 text-emerald-900" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">{t('landing.benefit_3')}</h3>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Section */}
-      <section className="max-w-5xl mx-auto px-4 w-full">
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-            {LANDING_CONSTANTS.TRUST_STATS.map((stat, idx) => (
-              <div key={idx} className="text-center pt-6 md:pt-0 first:pt-0">
-                <p className="text-4xl md:text-5xl font-black text-amber-600 mb-2">{stat.value}</p>
-                <p className="text-slate-500 font-medium uppercase tracking-wider text-sm">{stat.label}</p>
+            {/* Step 1 */}
+            <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
+                <Phone className="w-8 h-8" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">1</div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_1')}</p>
+            </div>
 
-      {/* Admin/Staff Section */}
-      <section className="max-w-3xl mx-auto px-4 text-center space-y-4 pb-12">
-        <div className="inline-flex justify-center items-center p-3 bg-slate-100 rounded-2xl text-slate-500 mb-2">
-          <Building className="w-8 h-8" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-800">{t('landing.staff_title')}</h2>
-        <p className="text-slate-500">{t('landing.staff_desc')}</p>
-        <div className="pt-2">
-          <Link to="/login" className="text-emerald-600 font-semibold hover:underline">
-            {t('landing.staff_login_link')}
-          </Link>
-        </div>
+            {/* Step 2 */}
+            <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
+                <MapPin className="w-8 h-8" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">2</div>
+              </div>
+              <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_2')}</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
+                <Calendar className="w-8 h-8" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">3</div>
+              </div>
+              <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_3')}</p>
+            </div>
+
+            {/* Step 4 */}
+            <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
+                <Smartphone className="w-8 h-8" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">4</div>
+              </div>
+              <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_4')}</p>
+            </div>
+
+            {/* Step 5 */}
+            <div className="relative bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center flex flex-col items-center hover:border-amber-300 transition-colors h-full">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-4 shadow-inner ring-4 ring-white relative shrink-0">
+                <CheckCircle className="w-8 h-8" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">5</div>
+              </div>
+              <p className="text-slate-700 font-medium leading-relaxed">{t('landing.step_5')}</p>
+            </div>
+
+            {/* Mobile Connecting Line */}
+            <div className="md:hidden absolute top-[10%] bottom-[10%] left-1/2 w-0.5 bg-amber-200 -z-10 -translate-x-1/2"></div>
+          </div>
+        </section>
+
+        {/* Benefits Section */}
+        <section className="bg-emerald-900 text-white rounded-3xl p-8 md:p-12 max-w-5xl mx-auto w-full">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold">{t('landing.why_use_title')}</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-emerald-800/50 p-6 rounded-2xl flex items-start gap-4 hover:bg-emerald-800/70 transition-colors">
+              <div className="p-3 bg-amber-500 rounded-xl shrink-0">
+                <Clock className="w-6 h-6 text-emerald-900" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">{t('landing.benefit_1')}</h3>
+              </div>
+            </div>
+            <div className="bg-emerald-800/50 p-6 rounded-2xl flex items-start gap-4 hover:bg-emerald-800/70 transition-colors">
+              <div className="p-3 bg-amber-500 rounded-xl shrink-0">
+                <Wallet className="w-6 h-6 text-emerald-900" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">{t('landing.benefit_2')}</h3>
+              </div>
+            </div>
+            <div className="bg-emerald-800/50 p-6 rounded-2xl flex items-start gap-4 hover:bg-emerald-800/70 transition-colors">
+              <div className="p-3 bg-amber-500 rounded-xl shrink-0">
+                <Languages className="w-6 h-6 text-emerald-900" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">{t('landing.benefit_3')}</h3>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust Section */}
+        <section className="max-w-5xl mx-auto px-4 w-full">
+          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+              {LANDING_CONSTANTS.TRUST_STATS.map((stat, idx) => (
+                <div key={idx} className="text-center pt-6 md:pt-0 first:pt-0">
+                  <p className="text-4xl md:text-5xl font-black text-amber-600 mb-2">{stat.value}</p>
+                  <p className="text-slate-500 font-medium uppercase tracking-wider text-sm">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Admin/Staff Section */}
+        <section className="max-w-3xl mx-auto px-4 text-center space-y-4 pb-12">
+          <div className="inline-flex justify-center items-center p-3 bg-slate-100 rounded-2xl text-slate-500 mb-2">
+            <Building className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800">{t('landing.staff_title')}</h2>
+          <p className="text-slate-500">{t('landing.staff_desc')}</p>
+          <div className="pt-2">
+            <Link to="/login" className="text-emerald-600 font-semibold hover:underline">
+              {t('landing.staff_login_link')}
+            </Link>
+          </div>
         </section>
       </div>
 
