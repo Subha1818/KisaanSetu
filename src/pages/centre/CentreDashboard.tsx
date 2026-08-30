@@ -1295,22 +1295,33 @@ const CentreDashboard: React.FC = () => {
                   <p className="text-sm text-slate-500 italic bg-slate-50 p-4 rounded-xl">No operating dates are currently set. Add some dates above to allow farmers to book slots.</p>
                 ) : (
                   <div className="flex flex-wrap gap-3">
-                    {availableDates.filter(d => d.status !== 'closed').map(dateObj => (
-                      <div key={dateObj.id} className="inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg overflow-hidden shadow-sm">
-                        <span className="px-3 py-2 text-sm font-semibold">
-                          {new Date(dateObj.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteOperatingDate(dateObj.id, dateObj.date)}
-                          disabled={loading}
-                          className="px-3 py-2 bg-indigo-100/50 hover:bg-red-100 hover:text-red-600 transition-colors border-l border-indigo-100"
-                          title="Remove this date"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
+                    {availableDates.filter(d => d.status !== 'closed').map(dateObj => {
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      const isPast = dateObj.date < todayStr;
+                      const badgeClasses = isPast 
+                        ? "inline-flex items-center bg-red-50 border border-red-100 text-red-700 rounded-lg overflow-hidden shadow-sm opacity-80"
+                        : "inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg overflow-hidden shadow-sm";
+                      const btnClasses = isPast
+                        ? "px-3 py-2 bg-red-100/50 hover:bg-red-200 hover:text-red-800 transition-colors border-l border-red-100"
+                        : "px-3 py-2 bg-indigo-100/50 hover:bg-red-100 hover:text-red-600 transition-colors border-l border-indigo-100";
+                      
+                      return (
+                        <div key={dateObj.id} className={badgeClasses}>
+                          <span className="px-3 py-2 text-sm font-semibold">
+                            {new Date(dateObj.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOperatingDate(dateObj.id, dateObj.date)}
+                            disabled={loading}
+                            className={btnClasses}
+                            title="Remove this date"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
