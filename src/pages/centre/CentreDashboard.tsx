@@ -74,8 +74,6 @@ interface Centre {
   block_code: number;
   status: 'open' | 'closed';
   daily_capacity: number;
-  booking_window_start: string;
-  booking_window_end: string;
   geo_blocks?: {
     block_name: string;
     district_name: string;
@@ -117,8 +115,7 @@ const CentreDashboard: React.FC = () => {
   // Settings Edit states
   const [dailyCapacity, setDailyCapacity] = useState<number>(50);
   const [centreStatus, setCentreStatus] = useState<'open' | 'closed'>('open');
-  const [windowStart, setWindowStart] = useState('');
-  const [windowEnd, setWindowEnd] = useState('');
+  const [selectedNewDate, setSelectedNewDate] = useState('');
 
   // Location States
   const [statesList, setStatesList] = useState<{ state_code: number; state_name: string }[]>([]);
@@ -187,8 +184,6 @@ const CentreDashboard: React.FC = () => {
       setCentre(centreRow);
       setDailyCapacity(centreRow.daily_capacity);
       setCentreStatus(centreRow.status);
-      setWindowStart(centreRow.booking_window_start);
-      setWindowEnd(centreRow.booking_window_end);
 
       // Initialize dropdown selections
       const blockCode = centreRow.block_code?.toString() || '';
@@ -561,8 +556,6 @@ const CentreDashboard: React.FC = () => {
         .update({
           daily_capacity: dailyCapacity,
           status: centreStatus,
-          booking_window_start: windowStart,
-          booking_window_end: windowEnd,
           block_code: parseInt(selectedBlockCode),
         })
         .eq('id', centre.id)
@@ -574,6 +567,65 @@ const CentreDashboard: React.FC = () => {
       }
 
       triggerNotification('Centre settings updated.');
+      await fetchCentreData(false);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const handleAddOperatingDate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!centre || !selectedNewDate) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const { error: insertErr } = await supabase.from('booking_dates').insert({
+        centre_id: centre.id,
+        date: selectedNewDate,
+        capacity: centre.daily_capacity,
+        booked_count: 0,
+        status: 'open'
+      });
+      if (insertErr) {
+        if (insertErr.code === '23505') { // Postgres Unique Violation
+          throw new Error('This date is already open.');
+        }
+        throw new Error(insertErr.message);
+      }
+      triggerNotification(`Date ${selectedNewDate} successfully added.`);
+      setSelectedNewDate('');
+      await fetchCentreData(false);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteOperatingDate = async (dateId: string, dateStr: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Check if any non-cancelled bookings exist for this date
+      const { data: activeBookings, error: bErr } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('booking_date_id', dateId)
+        .neq('status', 'cancelled')
+        .limit(1);
+
+      if (bErr) throw new Error(bErr.message);
+
+      if (activeBookings && activeBookings.length > 0) {
+        throw new Error(`Cannot remove ${dateStr} because there are active bookings. Please cancel them first.`);
+      }
+
+      // Safe to delete
+      const { error: delErr } = await supabase.from('booking_dates').delete().eq('id', dateId);
+      if (delErr) throw new Error(delErr.message);
+
+      triggerNotification(`Date ${dateStr} has been removed.`);
       await fetchCentreData(false);
     } catch (err: any) {
       setError(err.message);
@@ -1139,24 +1191,7 @@ const CentreDashboard: React.FC = () => {
                     <option value="closed">Closed / Blocked</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Booking Window Start</label>
-                  <input
-                    type="date"
-                    value={windowStart}
-                    onChange={(e) => setWindowStart(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Booking Window End</label>
-                  <input
-                    type="date"
-                    value={windowEnd}
-                    onChange={(e) => setWindowEnd(e.target.value)}
-                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                  />
-                </div>
+
 
                 <div className="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
                   <h4 className="text-xs uppercase font-extrabold tracking-wider text-indigo-700 mb-4">Depot Location (LGD)</h4>
@@ -1218,18 +1253,68 @@ const CentreDashboard: React.FC = () => {
                       </select>
                     </div>
                   </div>
-                </div>
               </div>
+            </div>
 
-              <div className="flex justify-end pt-4 border-t border-slate-100">
+              <div className="flex justify-end pt-4">
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all text-sm cursor-pointer"
+                  disabled={loading}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                 >
-                  Save Settings
+                  {loading ? 'Saving...' : 'Save Settings'}
                 </button>
               </div>
             </form>
+
+            <div className="mt-12 pt-8 border-t-2 border-slate-100">
+              <h3 className="font-bold text-slate-800 text-lg mb-2">Manage Operating Dates</h3>
+              <p className="text-sm text-slate-500 mb-6">Select specific dates when the centre will be open and accepting drop-offs. Dates are automatically populated with the daily slot capacity configured above.</p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                <input
+                  type="date"
+                  value={selectedNewDate}
+                  onChange={(e) => setSelectedNewDate(e.target.value)}
+                  className="block w-full sm:w-auto rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddOperatingDate}
+                  disabled={!selectedNewDate || loading}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <span className="text-lg leading-none">+</span> Add Date
+                </button>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Currently Open Dates</h4>
+                {availableDates.length === 0 ? (
+                  <p className="text-sm text-slate-500 italic bg-slate-50 p-4 rounded-xl">No operating dates are currently set. Add some dates above to allow farmers to book slots.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {availableDates.filter(d => d.status !== 'closed').map(dateObj => (
+                      <div key={dateObj.id} className="inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg overflow-hidden shadow-sm">
+                        <span className="px-3 py-2 text-sm font-semibold">
+                          {new Date(dateObj.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOperatingDate(dateObj.id, dateObj.date)}
+                          disabled={loading}
+                          className="px-3 py-2 bg-indigo-100/50 hover:bg-red-100 hover:text-red-600 transition-colors border-l border-indigo-100"
+                          title="Remove this date"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Manage Centre accepted Products list */}
