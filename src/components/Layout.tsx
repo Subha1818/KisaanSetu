@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Sprout, Building2, Shield, LogIn, UserPlus, Globe, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Sprout, Building2, Shield, LogIn, UserPlus, Globe, Menu, X, LogOut, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 
@@ -10,14 +10,47 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const [session, setSession] = useState<any>(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Auth session listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await supabase.auth.signOut();
+      setIsLogoutModalOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   // Handle scroll for navbar styling
   useEffect(() => {
@@ -125,25 +158,35 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               {/* Auth Buttons */}
               <div className="flex items-center gap-2">
-                {authItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${isActive
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10'
-                        : item.path === '/register'
-                          ? 'bg-slate-900 text-white hover:bg-slate-800'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 bg-white'
-                        }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                {session ? (
+                  <button
+                    onClick={() => setIsLogoutModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border border-slate-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-200"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                ) : (
+                  authItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${isActive
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10'
+                          : item.path === '/register'
+                            ? 'bg-slate-900 text-white hover:bg-slate-800'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 bg-white'
+                          }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.label}
+                      </Link>
+                    );
+                  })
+                )}
               </div>
             </div>
 
@@ -198,25 +241,38 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
 
               <div className="px-2 pt-4 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 mt-2">Account</div>
-              {authItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${item.path === '/register'
-                      ? 'bg-slate-900 text-white mt-2'
-                      : isActive
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'text-slate-600 border border-slate-200'
-                      }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
-                  </Link>
-                );
-              })}
+              {session ? (
+                <button
+                  onClick={() => {
+                    setIsLogoutModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-red-600 hover:bg-red-50"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </button>
+              ) : (
+                authItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${item.path === '/register'
+                        ? 'bg-slate-900 text-white mt-2'
+                        : isActive
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'text-slate-600 border border-slate-200'
+                        }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {item.label}
+                    </Link>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
@@ -226,6 +282,37 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className={`flex-1 w-full ${location.pathname === '/' ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}`}>
         {children}
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Confirm Logout</h3>
+              <p className="text-slate-500 text-center text-sm mb-6">Are you sure you want to log out of your account?</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  disabled={isLoggingOut}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md shadow-red-600/20"
+                >
+                  {isLoggingOut ? 'Logging out...' : 'Confirm Logout'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

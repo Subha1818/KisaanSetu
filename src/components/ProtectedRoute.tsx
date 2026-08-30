@@ -84,7 +84,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    // Redirect to login page and save location path
+    // Redirect to register page with pre-selected role if exactly one role is required
+    if (allowedRoles && allowedRoles.length === 1) {
+      return <Navigate to={`/register?role=${allowedRoles[0]}`} state={{ from: location }} replace />;
+    }
+    // Fallback to login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
