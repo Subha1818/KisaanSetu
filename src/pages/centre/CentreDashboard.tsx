@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Loader, Building, RefreshCw, AlertCircle, CheckCircle2, 
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
-  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar
+  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil
 } from 'lucide-react';
 
 const AllBookingsTable = ({ centreId, bookingDateId }: { centreId?: string; bookingDateId?: string }) => {
@@ -136,6 +136,15 @@ const CentreDashboard: React.FC = () => {
   const [scannedBookingId, setScannedBookingId] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
 
+  // Fix 2: Payment correction modal state
+  const [correctionModal, setCorrectionModal] = useState<{
+    paymentId: string;
+    currentStatus: string;
+    bookingId?: string;
+  } | null>(null);
+  const [correctionStatus, setCorrectionStatus] = useState<string>('pending');
+  const [correctionReason, setCorrectionReason] = useState<string>('');
+
   // Live Queue Subscription
   const { queue: bookings } = useLiveQueue(centre?.id, todaySlotId);
 
@@ -261,6 +270,11 @@ const CentreDashboard: React.FC = () => {
       if (procErr) throw new Error(procErr.message);
       setProcurements(procData || []);
 
+      // Fix 3: Run auto-expire check after data loads
+      if (centreId) {
+        autoExpireStaleBookings(centreId);
+      }
+
     } catch (err: any) {
       console.error('Error fetching staff dashboard data:', err);
       setError(err.message || 'An error occurred while loading dashboard data.');
@@ -272,6 +286,61 @@ const CentreDashboard: React.FC = () => {
   useEffect(() => {
     fetchCentreData();
   }, []);
+
+  // Fix 3: Auto-expire stale bookings (booked/called) whose date has fully passed
+  const autoExpireStaleBookings = async (centreId: string) => {
+    const now = new Date();
+    const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    try {
+      // Find all past booking_dates for this centre (dates strictly before today)
+      const { data: pastDates } = await supabase
+        .from('booking_dates')
+        .select('id')
+        .eq('centre_id', centreId)
+        .lt('date', localDateStr);
+
+      if (!pastDates || pastDates.length === 0) return;
+
+      const pastDateIds = pastDates.map((d: any) => d.id);
+
+      // Find bookings on past dates still stuck in booked/called
+      const { data: staleBookings } = await supabase
+        .from('bookings')
+        .select('id, farmer_id, token, status')
+        .in('booking_date_id', pastDateIds)
+        .in('status', ['booked', 'called']);
+
+      if (!staleBookings || staleBookings.length === 0) return;
+
+      // Transition each to no_show
+      for (const b of staleBookings) {
+        await supabase
+          .from('bookings')
+          .update({ status: 'no_show' })
+          .eq('id', b.id);
+
+        await supabase.from('booking_history').insert({
+          booking_id: b.id,
+          previous_status: b.status,
+          new_status: 'no_show',
+          changed_by: null, // system-triggered
+          note: 'Auto-expired: booking date has passed without attendance.',
+        });
+
+        await supabase.from('notifications').insert({
+          user_id: b.farmer_id,
+          type: 'no_show',
+          channel: 'app',
+          message: `Your booking token ${b.token} was marked as No Show as the procurement date has passed.`,
+          delivery_status: 'sent',
+        });
+      }
+
+      console.log(`[AutoExpire] Marked ${staleBookings.length} stale booking(s) as no_show.`);
+    } catch (err) {
+      console.error('[AutoExpire] Error expiring stale bookings:', err);
+    }
+  };
 
   // Fetch districts when state code changes
   useEffect(() => {
@@ -607,18 +676,19 @@ const CentreDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Check if any non-cancelled bookings exist for this date
+      // FIX 1: Only block on genuinely active bookings (booked/called/in_progress)
+      // Completed/cancelled/no_show bookings should NOT prevent date removal
       const { data: activeBookings, error: bErr } = await supabase
         .from('bookings')
         .select('id')
         .eq('booking_date_id', dateId)
-        .neq('status', 'cancelled')
+        .in('status', ['booked', 'called', 'in_progress'])
         .limit(1);
 
       if (bErr) throw new Error(bErr.message);
 
       if (activeBookings && activeBookings.length > 0) {
-        throw new Error(`Cannot remove ${dateStr} because there are active bookings. Please cancel them first.`);
+        throw new Error(`Cannot remove ${dateStr} because there are active (booked/in-progress) bookings. Please cancel or complete them first.`);
       }
 
       // Safe to delete
@@ -701,8 +771,14 @@ const CentreDashboard: React.FC = () => {
     }
   };
 
-  // Update Payout Status (pending -> initiated -> credited)
-  const handleUpdatePaymentStatus = async (paymentId: string, newStatus: any) => {
+  // Update Payout Status (normal one-way progression: pending -> initiated -> credited)
+  const handleUpdatePaymentStatus = async (paymentId: string, newStatus: any, currentStatus: any) => {
+    // Enforce one-way progression for normal dropdown
+    const order: Record<string, number> = { pending: 0, initiated: 1, credited: 2 };
+    if (order[newStatus] <= order[currentStatus]) {
+      setError('Normal status update only allows forward progression (Pending → Initiated → Credited). Use the "Correct Status" button to reverse.');
+      return;
+    }
     if (!session) return;
     try {
       setLoading(true);
@@ -720,6 +796,49 @@ const CentreDashboard: React.FC = () => {
       if (payErr) throw new Error(payErr.message);
 
       triggerNotification(`Payment status updated to ${newStatus}.`);
+      await fetchCentreData(false);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  // FIX 2: Corrective override — allows any status change but requires an audit reason
+  const handleCorrectionSubmit = async () => {
+    if (!correctionModal || !session) return;
+    if (!correctionReason.trim()) {
+      setError('Please enter a reason for this status correction.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { error: payErr } = await supabase
+        .from('payments')
+        .update({
+          status: correctionStatus,
+          updated_at: new Date().toISOString(),
+          updated_by: session.user.id,
+        })
+        .eq('id', correctionModal.paymentId);
+
+      if (payErr) throw new Error(payErr.message);
+
+      // Log to booking_history if we have a booking context
+      if (correctionModal.bookingId) {
+        await supabase.from('booking_history').insert({
+          booking_id: correctionModal.bookingId,
+          previous_status: correctionModal.currentStatus,
+          new_status: correctionStatus,
+          changed_by: session.user.id,
+          note: `[PAYMENT CORRECTION] ${correctionReason.trim()}`,
+        });
+      }
+
+      triggerNotification(`Payment corrected to "${correctionStatus}" with audit note.`);
+      setCorrectionModal(null);
+      setCorrectionReason('');
       await fetchCentreData(false);
     } catch (err: any) {
       setError(err.message);
@@ -1133,21 +1252,36 @@ const CentreDashboard: React.FC = () => {
                         </td>
                         <td className="py-4 px-6">
                           {payRow ? (
-                            <select
-                              value={payRow.status}
-                              onChange={(e) => handleUpdatePaymentStatus(payRow.id, e.target.value)}
-                              className={`rounded-lg border px-3 py-1.5 text-xs font-bold focus:outline-none transition-all ${
-                                payRow.status === 'pending' && 'bg-amber-50 text-amber-700 border-amber-200'
-                              } ${
-                                payRow.status === 'initiated' && 'bg-blue-50 text-blue-700 border-blue-200'
-                              } ${
-                                payRow.status === 'credited' && 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              }`}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="initiated">Initiated</option>
-                              <option value="credited">Credited</option>
-                            </select>
+                            <div className="flex items-center gap-2">
+                              {/* Normal forward-only dropdown */}
+                              <select
+                                value={payRow.status}
+                                onChange={(e) => handleUpdatePaymentStatus(payRow.id, e.target.value, payRow.status)}
+                                className={`rounded-lg border px-3 py-1.5 text-xs font-bold focus:outline-none transition-all ${
+                                  payRow.status === 'pending' && 'bg-amber-50 text-amber-700 border-amber-200'
+                                } ${
+                                  payRow.status === 'initiated' && 'bg-blue-50 text-blue-700 border-blue-200'
+                                } ${
+                                  payRow.status === 'credited' && 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                }`}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="initiated">Initiated</option>
+                                <option value="credited">Credited</option>
+                              </select>
+                              {/* FIX 2: Correction override — visually distinct pencil icon with orange color */}
+                              <button
+                                title="Correct Status (requires reason)"
+                                onClick={() => {
+                                  setCorrectionModal({ paymentId: payRow.id, currentStatus: payRow.status, bookingId: proc.booking_id });
+                                  setCorrectionStatus(payRow.status);
+                                  setCorrectionReason('');
+                                }}
+                                className="p-1.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-xs text-slate-400">No Payment Ledger</span>
                           )}
@@ -1613,6 +1747,63 @@ const CentreDashboard: React.FC = () => {
                   }}
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FIX 2: Payment Correction Modal */}
+      {correctionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" role="dialog" aria-modal="true">
+            <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-orange-50">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Pencil className="w-4 h-4 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm">Correct Payment Status</h3>
+                <p className="text-xs text-orange-700 mt-0.5">This is a corrective override — an audit log will be created.</p>
+              </div>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Set Correct Status To</label>
+                <select
+                  value={correctionStatus}
+                  onChange={(e) => setCorrectionStatus(e.target.value)}
+                  className="w-full rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm font-bold text-orange-800 focus:ring-2 focus:ring-orange-300 focus:outline-none"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="initiated">Initiated</option>
+                  <option value="credited">Credited</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-1">Current: <span className="font-semibold capitalize">{correctionModal.currentStatus}</span></p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Reason for Correction <span className="text-red-500">*</span></label>
+                <textarea
+                  value={correctionReason}
+                  onChange={(e) => setCorrectionReason(e.target.value)}
+                  placeholder="e.g. Payment was credited but system showed wrong status due to bank delay"
+                  className="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+              <button
+                onClick={() => { setCorrectionModal(null); setCorrectionReason(''); }}
+                className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-100 font-bold rounded-xl text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCorrectionSubmit}
+                disabled={!correctionReason.trim() || loading}
+                className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-md transition-colors"
+              >
+                {loading ? 'Saving...' : 'Save Correction'}
+              </button>
             </div>
           </div>
         </div>

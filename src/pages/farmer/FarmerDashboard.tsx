@@ -25,6 +25,9 @@ const FarmerDashboard: React.FC = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'history' | 'msp'>('history');
+
   // Realtime Live Queue Subscription
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -392,91 +395,126 @@ const FarmerDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Static MSP Info Cards */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <Award className="w-5 h-5 text-emerald-600" />
-          <h2 className="text-xl font-bold text-slate-900">{t('dashboard.msp_title')}</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-500">{t('dashboard.wheat')}</p>
-              <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,275 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
-            </div>
-            <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.rabi')}</span>
-          </div>
-
-          <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-500">{t('dashboard.paddy')}</p>
-              <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,183 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
-            </div>
-            <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.kharif')}</span>
-          </div>
-
-          <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-500">{t('dashboard.maize')}</p>
-              <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,090 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
-            </div>
-            <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.kharif')}</span>
-          </div>
-        </div>
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-slate-200 mt-8 mb-6">
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === 'history'
+              ? 'border-emerald-600 text-emerald-700'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          Procurement History
+        </button>
+        <button
+          onClick={() => setActiveTab('msp')}
+          className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === 'msp'
+              ? 'border-emerald-600 text-emerald-700'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          Government Minimum Support Prices (MSP)
+        </button>
       </div>
 
-      {/* Procurement History Section */}
-      {procurementHistory.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <History className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-xl font-bold text-slate-900">Procurement History</h2>
-          </div>
-          <div className="space-y-4">
-            {procurementHistory.map((item) => (
-              <div key={item.id} className="border border-slate-100 rounded-xl p-5 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="font-bold text-slate-800 text-lg">{item.bookings.product_name}</span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
-                      Token {item.bookings.token}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-500 mb-2">
-                    {new Date(item.created_at).toLocaleDateString('en-IN', {
-                      day: 'numeric', month: 'short', year: 'numeric'
-                    })} • {item.bookings.procurement_centres.name}
-                  </p>
-                  <div className="flex gap-4 text-sm font-medium">
-                    <span className="text-slate-700">Accepted: {item.quantity_accepted} kg</span>
-                    <span className="text-emerald-700">Amount: ₹{item.total_amount?.toLocaleString('en-IN')}</span>
-                  </div>
+      {/* Tab Content */}
+      <div className="mb-8">
+        {/* Static MSP Info Cards */}
+        {activeTab === 'msp' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <Award className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-xl font-bold text-slate-900">{t('dashboard.msp_title')}</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">{t('dashboard.wheat')}</p>
+                  <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,275 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
                 </div>
-                
-                <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
-                  <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                    item.payments[0]?.status === 'credited' ? 'bg-emerald-100 text-emerald-800' :
-                    item.payments[0]?.status === 'initiated' ? 'bg-indigo-100 text-indigo-800' :
-                    'bg-amber-100 text-amber-800'
-                  }`}>
-                    {item.payments[0]?.status === 'credited' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                    Payment {item.payments[0]?.status || 'pending'}
-                  </span>
-                  
-                  <button
-                    onClick={() => handleDownloadReceipt(item.id)}
-                    disabled={downloadingId === item.id}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-xs"
-                  >
-                    {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    Download Receipt
-                  </button>
-                </div>
+                <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.rabi')}</span>
               </div>
-            ))}
+
+              <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">{t('dashboard.paddy')}</p>
+                  <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,183 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
+                </div>
+                <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.kharif')}</span>
+              </div>
+
+              <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">{t('dashboard.maize')}</p>
+                  <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,090 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
+                </div>
+                <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.kharif')}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Procurement History Section */}
+        {activeTab === 'history' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <History className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-xl font-bold text-slate-900">Procurement History</h2>
+            </div>
+            {procurementHistory.length > 0 ? (
+              <div className="space-y-4">
+                {procurementHistory.map((item) => (
+                  <div key={item.id} className="border border-slate-100 rounded-xl p-5 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="font-bold text-slate-800 text-lg">{item.bookings.product_name}</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
+                          Token {item.bookings.token}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500 mb-2">
+                        {new Date(item.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'short', year: 'numeric'
+                        })} • {item.bookings.procurement_centres.name}
+                      </p>
+                      <div className="flex gap-4 text-sm font-medium">
+                        <span className="text-slate-700">Accepted: {item.quantity_accepted} kg</span>
+                        <span className="text-emerald-700">Amount: ₹{item.total_amount?.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+                      <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                        item.payments[0]?.status === 'credited' ? 'bg-emerald-100 text-emerald-800' :
+                        item.payments[0]?.status === 'initiated' ? 'bg-indigo-100 text-indigo-800' :
+                        'bg-amber-100 text-amber-800'
+                      }`}>
+                        {item.payments[0]?.status === 'credited' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                        Payment {item.payments[0]?.status || 'pending'}
+                      </span>
+                      
+                      <button
+                        onClick={() => handleDownloadReceipt(item.id)}
+                        disabled={downloadingId === item.id}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-xs"
+                      >
+                        {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        Download Receipt
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500 font-medium">
+                No procurement history found.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Cancel Modal */}
       {isCancelModalOpen && (
