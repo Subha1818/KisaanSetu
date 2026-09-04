@@ -15,14 +15,9 @@ interface PendingCentre {
   id: string;
   name: string;
   owner_name: string;
-  district: string;
-  block: string;
+  geo_blocks?: any;
   created_at: string;
-  staff: {
-    users: {
-      mobile_number: string;
-    }
-  }[];
+  staff: any;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -207,9 +202,10 @@ const AdminDashboard: React.FC = () => {
                 <div key={centre.id} className="bg-white border border-amber-200 rounded-xl p-5 shadow-sm">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                      <h3 className="font-bold text-lg text-slate-900">{centre.name}</h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        {centre.geo_blocks?.block_name || 'Unknown Block'}, {centre.geo_blocks?.district_name || 'Unknown District'}
+                      <h3 className="font-bold text-slate-800">{centre.name}</h3>
+                      <p className="text-xs text-slate-500">
+                        {Array.isArray(centre.geo_blocks) ? centre.geo_blocks[0]?.district_name : centre.geo_blocks?.district_name || 'N/A'}, 
+                        {Array.isArray(centre.geo_blocks) ? centre.geo_blocks[0]?.block_name : centre.geo_blocks?.block_name || 'N/A'}
                       </p>
                       <div className="mt-3 flex flex-wrap gap-4 text-sm">
                         <span className="text-slate-600">Applicant: <strong>{centre.owner_name}</strong></span>

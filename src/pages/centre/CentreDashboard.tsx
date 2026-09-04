@@ -2,60 +2,142 @@ import React, { useEffect, useState } from 'react';
 import { 
   Loader, Building, RefreshCw, AlertCircle, CheckCircle2, 
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
-  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil, X
+  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil, X, MapPin,
+  Ticket, Wheat, Clock
 } from 'lucide-react';
 
 const AllBookingsTable = ({ centreId, bookingDateId }: { centreId?: string; bookingDateId?: string }) => {
   const { queue: allBookings, loading } = useLiveQueue(centreId, bookingDateId);
 
-  if (loading) return <div className="p-4 text-center text-sm text-slate-500">Loading bookings...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3 bg-slate-50/50 rounded-xl border border-slate-100">
+        <Loader className="w-6 h-6 animate-spin text-indigo-600" />
+        <p className="text-slate-400 font-semibold text-xs">Loading bookings...</p>
+      </div>
+    );
+  }
+
+  const totalCount = allBookings.length;
+  const completedCount = allBookings.filter((b: any) => b.status === 'completed').length;
+  const activeCount = allBookings.filter((b: any) => b.status === 'in_progress' || b.status === 'called').length;
+  const bookedCount = allBookings.filter((b: any) => b.status === 'booked').length;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden relative shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left text-slate-600">
-          <thead className="text-xs text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200">
-            <tr>
-              <th className="px-6 py-4 font-extrabold tracking-wider">Token</th>
-              <th className="px-6 py-4 font-extrabold tracking-wider">Farmer</th>
-              <th className="px-6 py-4 font-extrabold tracking-wider">Crop & Qty</th>
-              <th className="px-6 py-4 font-extrabold tracking-wider text-right">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allBookings.length === 0 ? (
+    <div className="space-y-4">
+      {/* Metric Stat Chips */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total</span>
+          <span className="font-extrabold text-slate-900 text-lg">{totalCount}</span>
+        </div>
+        <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-3 flex items-center justify-between">
+          <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Booked</span>
+          <span className="font-extrabold text-amber-900 text-lg">{bookedCount}</span>
+        </div>
+        <div className="bg-blue-50/60 border border-blue-200/80 rounded-xl p-3 flex items-center justify-between">
+          <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Active</span>
+          <span className="font-extrabold text-blue-900 text-lg">{activeCount}</span>
+        </div>
+        <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 flex items-center justify-between">
+          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Done</span>
+          <span className="font-extrabold text-emerald-900 text-lg">{completedCount}</span>
+        </div>
+      </div>
+
+      {/* Styled Table Container */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden relative shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left text-slate-600">
+            <thead className="text-xs text-slate-500 uppercase bg-slate-50/90 border-b border-slate-200">
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center">
-                  <p className="text-slate-500 font-medium">No bookings found for this date.</p>
-                </td>
+                <th className="px-6 py-3.5 font-bold tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700">
+                    <Ticket className="w-3.5 h-3.5 text-indigo-500" />
+                    Token
+                  </span>
+                </th>
+                <th className="px-6 py-3.5 font-bold tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700">
+                    <Users className="w-3.5 h-3.5 text-indigo-500" />
+                    Farmer
+                  </span>
+                </th>
+                <th className="px-6 py-3.5 font-bold tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700">
+                    <Wheat className="w-3.5 h-3.5 text-indigo-500" />
+                    Crop & Qty
+                  </span>
+                </th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-right">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700 justify-end">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                    Status
+                  </span>
+                </th>
               </tr>
-            ) : (
-              allBookings.map((booking) => (
-                <tr key={booking.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <span className="font-bold text-slate-900">{booking.token}</span>
-                  </td>
-                  <td className="px-6 py-4 font-medium">{booking.users?.name}</td>
-                  <td className="px-6 py-4">
-                    {booking.product_name} <span className="text-slate-400">({booking.quantity} kg)</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      booking.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
-                      booking.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      booking.status === 'called' ? 'bg-indigo-100 text-indigo-800 animate-pulse' :
-                      booking.status === 'no_show' ? 'bg-red-100 text-red-800' :
-                      booking.status === 'cancelled' ? 'bg-slate-100 text-slate-800' :
-                      'bg-amber-100 text-amber-800'
-                    }`}>
-                      {booking.status.replace('_', ' ')}
-                    </span>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {allBookings.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center">
+                    <div className="max-w-xs mx-auto space-y-2">
+                      <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <p className="text-slate-800 font-bold text-sm">No Bookings Scheduled</p>
+                      <p className="text-slate-400 text-xs">There are no farmer drop-off bookings recorded for this selected date.</p>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                allBookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-indigo-50/30 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="font-mono font-black text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 text-xs tracking-wide shadow-2xs">
+                        {booking.token}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-100 shrink-0">
+                          {booking.users?.name ? booking.users.name.charAt(0).toUpperCase() : 'F'}
+                        </div>
+                        <span className="font-bold text-slate-800">{booking.users?.name || 'Farmer'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800">{booking.product_name}</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                          {booking.quantity} kg
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                        booking.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        booking.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        booking.status === 'called' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse' :
+                        booking.status === 'no_show' ? 'bg-red-50 text-red-700 border-red-200' :
+                        booking.status === 'cancelled' ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                        'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        {booking.status === 'completed' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                        {booking.status === 'in_progress' && <Play className="w-3 h-3 text-blue-600" />}
+                        {booking.status === 'called' && <Volume2 className="w-3 h-3 text-indigo-600" />}
+                        {booking.status === 'no_show' && <XCircle className="w-3 h-3 text-red-600" />}
+                        {booking.status === 'cancelled' && <X className="w-3 h-3 text-slate-500" />}
+                        {booking.status === 'booked' && <Clock className="w-3 h-3 text-amber-600" />}
+                        {booking.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -79,6 +161,8 @@ interface Centre {
     district_name: string;
     state_name: string;
   };
+  latitude?: number;
+  longitude?: number;
 }
 
 
@@ -126,6 +210,8 @@ const CentreDashboard: React.FC = () => {
   const [selectedStateCode, setSelectedStateCode] = useState('');
   const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
   const [selectedBlockCode, setSelectedBlockCode] = useState('');
+  const [latitude, setLatitude] = useState<string>('');
+  const [longitude, setLongitude] = useState<string>('');
 
   // Products Edit states
   const [newProductName, setNewProductName] = useState('');
@@ -203,6 +289,8 @@ const CentreDashboard: React.FC = () => {
       setSelectedStateCode(stateCode);
       setSelectedDistrictCode(districtCode);
       setSelectedBlockCode(blockCode);
+      setLatitude(centreRow.latitude?.toString() || '');
+      setLongitude(centreRow.longitude?.toString() || '');
 
       // Fetch states, districts, and blocks for cascading dropdowns
       const [statesRes, districtsRes, blocksRes] = await Promise.all([
@@ -398,6 +486,26 @@ const CentreDashboard: React.FC = () => {
   const triggerNotification = (text: string) => {
     setSuccess(text);
     setTimeout(() => setSuccess(null), 4000);
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser.');
+      return;
+    }
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude.toFixed(6));
+        setLongitude(position.coords.longitude.toFixed(6));
+        setLoading(false);
+      },
+      () => {
+        setError('Unable to retrieve your location. Please enter manually.');
+        setLoading(false);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   // Stats Computations
@@ -634,6 +742,8 @@ const CentreDashboard: React.FC = () => {
           daily_capacity: dailyCapacity,
           status: centreStatus,
           block_code: parseInt(selectedBlockCode),
+          latitude: latitude ? parseFloat(latitude) : null,
+          longitude: longitude ? parseFloat(longitude) : null,
         })
         .eq('id', centre.id)
         .select();
@@ -1411,9 +1521,40 @@ const CentreDashboard: React.FC = () => {
                       </select>
                     </div>
                   </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-xs font-bold text-slate-650">Centre Coordinates (Optional)</label>
+                      <button
+                        type="button"
+                        onClick={handleGetLocation}
+                        className="text-xs font-bold text-indigo-600 flex items-center gap-1 hover:text-indigo-700 transition-colors"
+                      >
+                        <MapPin className="w-3 h-3" />
+                        Use My Location
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder="Latitude"
+                        value={latitude}
+                        onChange={(e) => setLatitude(e.target.value)}
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm bg-white"
+                      />
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder="Longitude"
+                        value={longitude}
+                        onChange={(e) => setLongitude(e.target.value)}
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-
               <div className="flex justify-end pt-4">
                 <button
                   type="submit"

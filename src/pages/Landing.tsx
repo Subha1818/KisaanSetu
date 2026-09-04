@@ -109,7 +109,7 @@ const Landing: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center border-b border-slate-50 pb-3">
                   <p className="text-slate-500 font-medium">Farmer</p>
-                  <p className="font-bold text-slate-800">Ramesh Kumar</p>
+                  <p className="font-bold text-slate-800">Narendra Modi</p>
                 </div>
               </div>
 
@@ -149,7 +149,7 @@ const Landing: React.FC = () => {
                   {/* SVG Mockup for Auth Form */}
                   <svg viewBox="0 0 400 300" className="w-full h-auto drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0" y="0" width="400" height="300" fill="#ffffff" />
-                    
+
                     {/* Role Selector */}
                     <text x="20" y="30" fill="#334155" fontSize="14" fontWeight="bold" fontFamily="sans-serif">Select Your Portal Role</text>
                     <rect x="20" y="45" width="360" height="45" rx="8" fill="#f0fdf4" stroke="#10b981" strokeWidth="2" />
@@ -157,14 +157,14 @@ const Landing: React.FC = () => {
                     <path d="M42 68 v-2 a4 4 0 0 1 4 -4 h4 M42 68 a4 4 0 0 0 4 4 h2" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" />
                     <circle cx="52" cy="62" r="2" fill="#059669" />
                     <text x="75" y="72" fill="#0f172a" fontSize="14" fontWeight="bold" fontFamily="sans-serif">Farmer</text>
-                    
+
                     <rect x="20" y="100" width="360" height="40" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-                    
+
                     {/* Mobile Number */}
                     <text x="20" y="165" fill="#334155" fontSize="13" fontWeight="bold" fontFamily="sans-serif">Mobile Number</text>
                     <rect x="20" y="175" width="360" height="40" rx="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                     <text x="35" y="200" fill="#94a3b8" fontSize="13" fontFamily="sans-serif">e.g. 9876543210</text>
-                    
+
                     {/* Password */}
                     <text x="20" y="235" fill="#334155" fontSize="13" fontWeight="bold" fontFamily="sans-serif">Password</text>
                     <rect x="20" y="245" width="360" height="40" rx="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
@@ -189,29 +189,29 @@ const Landing: React.FC = () => {
                 <div className="bg-slate-50 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200 p-6">
                   <svg viewBox="0 0 400 300" className="w-full h-auto drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0" y="0" width="400" height="300" fill="#f8fafc" />
-                    
+
                     {/* Info Box */}
                     <rect x="20" y="20" width="360" height="40" rx="6" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
                     <circle cx="40" cy="40" r="6" fill="none" stroke="#10b981" strokeWidth="2" />
                     <circle cx="40" cy="40" r="2" fill="#10b981" />
                     <text x="60" y="44" fill="#64748b" fontSize="11" fontFamily="sans-serif">Select your location parameters to retrieve live depot counts.</text>
-                    
+
                     {/* Dropdowns */}
                     <text x="20" y="85" fill="#334155" fontSize="12" fontWeight="bold" fontFamily="sans-serif">State</text>
                     <rect x="20" y="95" width="110" height="35" rx="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                     <text x="30" y="117" fill="#334155" fontSize="11" fontFamily="sans-serif">HARYANA</text>
                     <path d="M 115 112 l 4 4 l 4 -4" fill="none" stroke="#94a3b8" strokeWidth="1.5" />
-                    
+
                     <text x="140" y="85" fill="#334155" fontSize="12" fontWeight="bold" fontFamily="sans-serif">District</text>
                     <rect x="140" y="95" width="115" height="35" rx="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                     <text x="150" y="117" fill="#334155" fontSize="10" fontFamily="sans-serif">MAHENDRAGARH</text>
                     <path d="M 240 112 l 4 4 l 4 -4" fill="none" stroke="#94a3b8" strokeWidth="1.5" />
-                    
+
                     <text x="265" y="85" fill="#334155" fontSize="12" fontWeight="bold" fontFamily="sans-serif">Block</text>
                     <rect x="265" y="95" width="115" height="35" rx="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                     <text x="275" y="117" fill="#334155" fontSize="11" fontFamily="sans-serif">KANINA</text>
                     <path d="M 365 112 l 4 4 l 4 -4" fill="none" stroke="#94a3b8" strokeWidth="1.5" />
-                    
+
                     {/* Result Card */}
                     <text x="20" y="165" fill="#64748b" fontSize="11" fontFamily="sans-serif">Showing active depots located in KANINA:</text>
                     <rect x="20" y="180" width="220" height="85" rx="8" fill="#ffffff" stroke="#10b981" strokeWidth="1.5" />
@@ -221,7 +221,7 @@ const Landing: React.FC = () => {
                     <line x1="35" y1="240" x2="225" y2="240" stroke="#f1f5f9" strokeWidth="1" />
                     <text x="35" y="255" fill="#64748b" fontSize="10" fontFamily="sans-serif">Daily Dropoff Limit:</text>
                     <text x="195" y="255" fill="#0f172a" fontSize="10" fontWeight="bold" fontFamily="sans-serif">50 slots</text>
-                    
+
                     {/* Button */}
                     <rect x="260" y="225" width="120" height="40" rx="8" fill="#10b981" />
                     <text x="320" y="250" fill="#ffffff" fontSize="12" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">Select Products</text>
@@ -243,16 +243,16 @@ const Landing: React.FC = () => {
                 <div className="bg-slate-50 p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200">
                   <svg viewBox="0 0 400 300" className="w-full h-auto drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0" y="0" width="400" height="300" fill="#f8fafc" />
-                    
+
                     <text x="20" y="30" fill="#10b981" fontSize="10" fontWeight="bold" fontFamily="sans-serif" letterSpacing="1">UPCOMING APPOINTMENT</text>
                     <text x="20" y="55" fill="#0f172a" fontSize="18" fontWeight="900" fontFamily="sans-serif">Active Procurement Ticket</text>
-                    
+
                     <rect x="330" y="20" width="50" height="20" rx="10" fill="#ecfdf5" stroke="#10b981" strokeWidth="1" />
                     <text x="355" y="34" fill="#059669" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">BOOKED</text>
-                    
+
                     {/* Ticket Card */}
                     <rect x="20" y="75" width="360" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
-                    
+
                     {/* QR Code Placeholder */}
                     <rect x="35" y="90" width="70" height="70" rx="4" fill="#f1f5f9" />
                     <rect x="40" y="95" width="20" height="20" fill="#0f172a" />
@@ -261,19 +261,19 @@ const Landing: React.FC = () => {
                     <rect x="70" y="125" width="10" height="10" fill="#0f172a" />
                     <rect x="85" y="135" width="10" height="10" fill="#0f172a" />
                     <rect x="65" y="145" width="30" height="10" fill="#0f172a" />
-                    
+
                     <text x="125" y="105" fill="#64748b" fontSize="10" fontWeight="bold" fontFamily="sans-serif">YOUR QUEUE TOKEN</text>
                     <text x="125" y="130" fill="#0f172a" fontSize="24" fontWeight="900" fontFamily="sans-serif">TKT-001</text>
-                    
+
                     <text x="260" y="105" fill="#64748b" fontSize="10" fontWeight="bold" fontFamily="sans-serif">SCHEDULED DROPOFF</text>
                     <text x="260" y="130" fill="#0f172a" fontSize="14" fontWeight="bold" fontFamily="sans-serif">2 September 2026</text>
-                    
+
                     <line x1="20" y1="175" x2="380" y2="175" stroke="#f1f5f9" strokeWidth="2" strokeDasharray="6 6" />
-                    
+
                     <text x="40" y="210" fill="#64748b" fontSize="11" fontFamily="sans-serif">Procurement Centre</text>
                     <text x="40" y="225" fill="#0f172a" fontSize="13" fontWeight="bold" fontFamily="sans-serif">Rampur Depot A</text>
                     <text x="40" y="240" fill="#94a3b8" fontSize="10" fontFamily="sans-serif">DURBUK, LEH LADAKH</text>
-                    
+
                     <text x="220" y="210" fill="#64748b" fontSize="11" fontFamily="sans-serif">Dropoff Quantity</text>
                     <text x="220" y="225" fill="#0f172a" fontSize="13" fontWeight="bold" fontFamily="sans-serif">Wheat</text>
                     <text x="220" y="240" fill="#94a3b8" fontSize="10" fontFamily="sans-serif">Weight: </text>
@@ -296,15 +296,15 @@ const Landing: React.FC = () => {
                 <div className="bg-slate-50 p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200">
                   <svg viewBox="0 0 400 200" className="w-full h-auto drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0" y="0" width="400" height="200" fill="#f8fafc" />
-                    
+
                     <text x="20" y="30" fill="#4f46e5" fontSize="11" fontWeight="900" fontFamily="sans-serif" letterSpacing="1">LIVE QUEUE STATUS</text>
-                    
+
                     {/* Now Serving Card */}
                     <rect x="20" y="50" width="170" height="110" rx="12" fill="#eff6ff" />
                     <rect x="20" y="50" width="170" height="4" fill="#6366f1" />
                     <text x="35" y="80" fill="#4338ca" fontSize="10" fontWeight="bold" fontFamily="sans-serif" letterSpacing="1">NOW SERVING</text>
                     <text x="35" y="125" fill="#312e81" fontSize="32" fontWeight="900" fontFamily="sans-serif">TKT-038</text>
-                    
+
                     {/* People Ahead Card */}
                     <rect x="210" y="50" width="170" height="110" rx="12" fill="#fffbeb" />
                     <rect x="210" y="50" width="170" height="4" fill="#f59e0b" />
@@ -328,22 +328,22 @@ const Landing: React.FC = () => {
                 <div className="bg-slate-50 p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200">
                   <svg viewBox="0 0 400 250" className="w-full h-auto drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0" y="0" width="400" height="250" fill="#f8fafc" />
-                    
+
                     <rect x="20" y="20" width="360" height="200" rx="12" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-                    
+
                     <rect x="40" y="40" width="140" height="30" rx="15" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.5" />
                     <circle cx="55" cy="55" r="8" fill="#10b981" />
                     <path d="M52 55 l2 2 l4 -5" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <text x="75" y="59" fill="#065f46" fontSize="12" fontWeight="bold" fontFamily="sans-serif">Payment Credited</text>
-                    
+
                     <line x1="40" y1="90" x2="360" y2="90" stroke="#f1f5f9" strokeWidth="2" />
-                    
+
                     <text x="40" y="125" fill="#64748b" fontSize="11" fontFamily="sans-serif">Final Crop Weighed</text>
                     <text x="40" y="145" fill="#0f172a" fontSize="16" fontWeight="bold" fontFamily="sans-serif">Wheat (2,050 kg)</text>
-                    
+
                     <text x="40" y="180" fill="#64748b" fontSize="11" fontFamily="sans-serif">Amount Issued</text>
                     <text x="40" y="205" fill="#10b981" fontSize="22" fontWeight="900" fontFamily="sans-serif">₹ 46,637.50</text>
-                    
+
                     <rect x="260" y="175" width="100" height="35" rx="6" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1" />
                     <text x="310" y="196" fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">View Receipt</text>
                   </svg>
