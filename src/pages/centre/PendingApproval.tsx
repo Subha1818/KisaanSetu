@@ -18,14 +18,14 @@ const PendingApproval: React.FC = () => {
         .from('staff')
         .select('centre_id')
         .eq('user_id', session.user.id)
-        .single();
+        .maybeSingle();
         
       if (staffData?.centre_id) {
         const { data: centreData } = await supabase
           .from('procurement_centres')
           .select('name, approval_status')
           .eq('id', staffData.centre_id)
-          .single();
+          .maybeSingle();
           
         if (centreData?.name) {
           setCentreName(centreData.name);

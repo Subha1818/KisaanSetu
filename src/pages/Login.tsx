@@ -68,7 +68,7 @@ const Login: React.FC = () => {
         .from('staff')
         .select('centre_id')
         .eq('user_id', data.user.id)
-        .single();
+        .maybeSingle();
 
       if (staffMapping?.centre_id) {
         // They are centre staff - check their centre's approval status

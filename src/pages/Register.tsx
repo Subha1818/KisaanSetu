@@ -18,10 +18,25 @@ const Register: React.FC = () => {
   const [latitude, setLatitude] = useState<string>('');
   const [longitude, setLongitude] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Registration flow state
+  const [stage, setStage] = useState<'form' | 'otp'>('form');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const { t, i18n } = useTranslation();
+
+  // OTP Countdown Timer
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (stage === 'otp' && otpCountdown > 0) {
+      timer = setTimeout(() => setOtpCountdown(prev => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [stage, otpCountdown]);
 
   // Geo Selection Hook for Centre Staff
   const {
@@ -71,13 +86,73 @@ const Register: React.FC = () => {
       setLoading(false);
       return;
     }
-
+    
+    // Instead of creating the user immediately, trigger OTP
     try {
+      const { data, error: fnError } = await supabase.functions.invoke('send-otp', {
+        body: { mobile_number: formattedPhone }
+      });
+      
+      if (fnError) {
+        let msg = fnError.message;
+        try {
+          if (fnError.context && typeof fnError.context.json === 'function') {
+            const errJson = await fnError.context.json();
+            if (errJson?.error) msg = errJson.error;
+          }
+        } catch (_) {}
+        throw new Error(msg || 'Failed to send OTP.');
+      }
+      
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Success! Move to OTP stage
+      setOtpCode('');
+      setOtpCountdown(60);
+      setStage('otp');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while sending OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    
+    let formattedPhone = mobile.trim();
+    if (/^\d{10}$/.test(formattedPhone)) {
+      formattedPhone = `+91${formattedPhone}`;
+    }
+    
+    try {
+      // 1. Verify OTP first
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-otp', {
+        body: { mobile_number: formattedPhone, otp_code: otpCode.trim() }
+      });
+      
+      if (verifyError) {
+        let msg = verifyError.message;
+        try {
+          if (verifyError.context && typeof verifyError.context.json === 'function') {
+            const errJson = await verifyError.context.json();
+            if (errJson?.error) msg = errJson.error;
+          }
+        } catch (_) {}
+        throw new Error(msg || 'Failed to verify OTP.');
+      }
+      
+      if (verifyData && verifyData.error) {
+        throw new Error(verifyData.error);
+      }
+
+      // 2. OTP is verified! Now proceed with the original signUp logic
       const internalEmail = `${formattedPhone.replace('+', '')}@farmerapp.internal`;
 
-      // 1. Sign up the user with Supabase Auth, mapping metadata
-      // NOTE: Even for staff, we create with 'farmer' role in auth metadata.
-      // The staff table linkage + approval status is what grants staff access.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: internalEmail,
         password: password,
@@ -93,6 +168,9 @@ const Register: React.FC = () => {
 
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('User creation failed.');
+      
+      // Update phone_verified flag in users table
+      await supabase.from('users').update({ phone_verified: true }).eq('id', authData.user.id);
 
       if (role === 'staff') {
         // Sign in immediately to get a valid session for RLS on insert
@@ -144,6 +222,7 @@ const Register: React.FC = () => {
       }
 
       setSuccess(true);
+      setStage('form'); // reset to form stage just so success view displays cleanly without OTP UI
 
       // Auto-redirect to login after 3 seconds
       setTimeout(() => {
@@ -151,7 +230,46 @@ const Register: React.FC = () => {
       }, 3000);
 
     } catch (err: any) {
-      setError(err.message || 'An error occurred during registration.');
+      setError(err.message || 'An error occurred during verification.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (otpCountdown > 0) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    let formattedPhone = mobile.trim();
+    if (/^\d{10}$/.test(formattedPhone)) {
+      formattedPhone = `+91${formattedPhone}`;
+    }
+    
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('send-otp', {
+        body: { mobile_number: formattedPhone }
+      });
+      
+      if (fnError) {
+        let msg = fnError.message;
+        try {
+          if (fnError.context && typeof fnError.context.json === 'function') {
+            const errJson = await fnError.context.json();
+            if (errJson?.error) msg = errJson.error;
+          }
+        } catch (_) {}
+        throw new Error(msg || 'Failed to resend OTP.');
+      }
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
+      
+      setOtpCountdown(60);
+      // Optional: show a small toast or message that it was resent
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while resending OTP.');
     } finally {
       setLoading(false);
     }
@@ -247,7 +365,65 @@ const Register: React.FC = () => {
               </div>
             )}
 
-            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {stage === 'otp' && !success && (
+              <form className="mt-8 space-y-6" onSubmit={handleVerifyOtp}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      Verify your mobile number
+                    </label>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Enter the 6-digit code sent to +91XXXXXXX{mobile.slice(-3)}
+                    </p>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-lg text-center tracking-widest font-bold transition-all"
+                      placeholder="XXXXXX"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <button
+                      type="button"
+                      onClick={() => setStage('form')}
+                      className="text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                    >
+                      &larr; Back to edit details
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={otpCountdown > 0 || loading}
+                      className="text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {otpCountdown > 0 ? `Resend in 0:${otpCountdown.toString().padStart(2, '0')}` : 'Resend Code'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    disabled={loading || otpCode.length !== 6}
+                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <Loader className="w-5 h-5 animate-spin text-white" />
+                    ) : (
+                      'Verify & Create Account'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {stage === 'form' && !success && (
+              <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
 
               {/* Role Selection */}
               <div className="space-y-3">
@@ -488,6 +664,7 @@ const Register: React.FC = () => {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       </div>

@@ -43,7 +43,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             .from('staff')
             .select('centre_id')
             .eq('user_id', session.user.id)
-            .single();
+            .maybeSingle();
             
           if (staffMapping?.centre_id) {
             currentRole = 'staff';
@@ -79,7 +79,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               .from('staff')
               .select('centre_id')
               .eq('user_id', session.user.id)
-              .single();
+              .maybeSingle();
               
             if (staffMapping?.centre_id) {
               currentRole = 'staff';

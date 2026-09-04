@@ -17,14 +17,14 @@ const RejectedCentre: React.FC = () => {
         .from('staff')
         .select('centre_id')
         .eq('user_id', session.user.id)
-        .single();
+        .maybeSingle();
         
       if (staffData?.centre_id) {
         const { data: centreData } = await supabase
           .from('procurement_centres')
           .select('name, rejection_reason')
           .eq('id', staffData.centre_id)
-          .single();
+          .maybeSingle();
           
         if (centreData?.name) {
           setCentreName(centreData.name);
