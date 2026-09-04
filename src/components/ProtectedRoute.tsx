@@ -34,8 +34,24 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           .eq('id', session.user.id)
           .single();
 
-        if (profile && !error) {
-          setRole(profile.role);
+        let currentRole = profile?.role;
+
+        // If their role is farmer, double check if they have a staff mapping
+        // (Staff are registered with 'farmer' role by default in users table)
+        if (currentRole === 'farmer') {
+          const { data: staffMapping } = await supabase
+            .from('staff')
+            .select('centre_id')
+            .eq('user_id', session.user.id)
+            .single();
+            
+          if (staffMapping?.centre_id) {
+            currentRole = 'staff';
+          }
+        }
+
+        if (currentRole && !error) {
+          setRole(currentRole);
         }
       } catch (err) {
         console.error('Error during ProtectedRoute auth check:', err);
@@ -56,8 +72,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             .select('role')
             .eq('id', session.user.id)
             .single();
-          if (profile) {
-            setRole(profile.role);
+          let currentRole = profile?.role;
+          
+          if (currentRole === 'farmer') {
+            const { data: staffMapping } = await supabase
+              .from('staff')
+              .select('centre_id')
+              .eq('user_id', session.user.id)
+              .single();
+              
+            if (staffMapping?.centre_id) {
+              currentRole = 'staff';
+            }
+          }
+          
+          if (currentRole) {
+            setRole(currentRole);
           }
         } else {
           setUser(null);

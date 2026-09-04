@@ -58,13 +58,36 @@ const Login: React.FC = () => {
 
       // 3. Redirect to correct panel
       const role = profile.role;
-      if (role === 'farmer') {
-        navigate('/farmer');
-      } else if (role === 'staff') {
-        navigate('/centre');
-      } else if (role === 'admin') {
+      if (role === 'admin') {
         navigate('/admin');
+        return;
+      }
+
+      // Check if user has a staff row mapping
+      const { data: staffMapping } = await supabase
+        .from('staff')
+        .select('centre_id')
+        .eq('user_id', data.user.id)
+        .single();
+
+      if (staffMapping?.centre_id) {
+        // They are centre staff - check their centre's approval status
+        const { data: centreData } = await supabase
+          .from('procurement_centres')
+          .select('approval_status')
+          .eq('id', staffMapping.centre_id)
+          .single();
+
+        if (centreData?.approval_status === 'pending') {
+          navigate('/centre/pending');
+        } else if (centreData?.approval_status === 'rejected') {
+          navigate('/centre/rejected');
+        } else {
+          // Approved
+          navigate('/centre');
+        }
       } else {
+        // No staff mapping -> must be a farmer
         navigate('/farmer');
       }
     } catch (err: any) {

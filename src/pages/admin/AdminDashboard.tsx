@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Users, Building, Activity, Package, Loader, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Users, Building, Activity, Package, Loader, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 interface CentreStat {
@@ -11,29 +11,109 @@ interface CentreStat {
   total_quantity_purchased: number;
 }
 
+interface PendingCentre {
+  id: string;
+  name: string;
+  owner_name: string;
+  district: string;
+  block: string;
+  created_at: string;
+  staff: {
+    users: {
+      mobile_number: string;
+    }
+  }[];
+}
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [centres, setCentres] = useState<CentreStat[]>([]);
+  const [pendingCentres, setPendingCentres] = useState<PendingCentre[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [session, setSession] = useState<any>(null);
+
+  const fetchDashboardData = async () => {
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+
+      // Fetch active centres stats
+      const { data: activeData, error: activeErr } = await supabase
+        .from('admin_centre_list_stats')
+        .select('*')
+        .eq('approval_status', 'approved')
+        .order('centre_name');
+      
+      if (activeErr) throw activeErr;
+      setCentres(activeData || []);
+
+      // Fetch pending requests
+      const { data: pendingData, error: pendingErr } = await supabase
+        .from('procurement_centres')
+        .select(`
+          id,
+          name,
+          owner_name,
+          geo_blocks (
+            district_name,
+            block_name
+          ),
+          created_at,
+          staff (
+            users (
+              mobile_number
+            )
+          )
+        `)
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (pendingErr) throw pendingErr;
+      setPendingCentres(pendingData || []);
+
+    } catch (err) {
+      console.error('Error fetching admin stats:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchCentres = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('admin_centre_list_stats')
-          .select('*')
-          .order('centre_name');
-        
-        if (error) throw error;
-        setCentres(data || []);
-      } catch (err) {
-        console.error('Error fetching admin stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCentres();
+    fetchDashboardData();
   }, []);
+
+  const handleApprove = async (centreId: string) => {
+    if (!session?.user) return;
+    try {
+      const { error } = await supabase.rpc('approve_centre', {
+        p_centre_id: centreId,
+        p_reviewer_id: session.user.id
+      });
+      if (error) throw error;
+      fetchDashboardData();
+    } catch (err: any) {
+      alert('Error approving centre: ' + err.message);
+    }
+  };
+
+  const handleReject = async (centreId: string) => {
+    if (!session?.user || !rejectionReason.trim()) return;
+    try {
+      const { error } = await supabase.rpc('reject_centre', {
+        p_centre_id: centreId,
+        p_reviewer_id: session.user.id,
+        p_reason: rejectionReason.trim()
+      });
+      if (error) throw error;
+      setRejectingId(null);
+      setRejectionReason('');
+      fetchDashboardData();
+    } catch (err: any) {
+      alert('Error rejecting centre: ' + err.message);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Hero Header */}
@@ -107,11 +187,95 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Pending Approvals Section */}
+      {pendingCentres.length > 0 && (
+        <div className="bg-amber-50 rounded-2xl border border-amber-200 p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-amber-900 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-600" />
+              Centre Approval Requests
+            </h2>
+            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase">
+              {pendingCentres.length} Pending
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {pendingCentres.map((centre) => {
+              const mobile = centre.staff?.[0]?.users?.mobile_number || 'N/A';
+              return (
+                <div key={centre.id} className="bg-white border border-amber-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">{centre.name}</h3>
+                      <p className="text-sm text-slate-500 mt-1">
+                        {centre.geo_blocks?.block_name || 'Unknown Block'}, {centre.geo_blocks?.district_name || 'Unknown District'}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                        <span className="text-slate-600">Applicant: <strong>{centre.owner_name}</strong></span>
+                        <span className="text-slate-600">Mobile: <strong>{mobile}</strong></span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      {rejectingId === centre.id ? (
+                        <div className="flex flex-col gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Reason for rejection..." 
+                            className="text-sm border border-slate-300 rounded-lg px-3 py-2 w-full sm:w-48"
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleReject(centre.id)}
+                              disabled={!rejectionReason.trim()}
+                              className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors"
+                            >
+                              Confirm
+                            </button>
+                            <button 
+                              onClick={() => { setRejectingId(null); setRejectionReason(''); }}
+                              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 w-full">
+                          <button 
+                            onClick={() => handleApprove(centre.id)}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold py-2 px-4 rounded-lg transition-colors"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => setRejectingId(centre.id)}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-bold py-2 px-4 rounded-lg transition-colors"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Centres List Section */}
       <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
         <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
           <Building className="w-5 h-5 text-indigo-600" />
-          Procurement Centres
+          Active Procurement Centres
         </h2>
         
         {loading ? (

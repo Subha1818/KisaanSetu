@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Sprout, AlertCircle, CheckCircle2, Loader, ArrowLeft, Building2, Shield, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
+import { useCascadingGeo } from '../hooks/useCascadingGeo';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -13,11 +14,26 @@ const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [centreName, setCentreName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const { t, i18n } = useTranslation();
+
+  // Geo Selection Hook for Centre Staff
+  const {
+    statesList,
+    districtsList,
+    blocksList,
+    selectedStateCode,
+    setSelectedStateCode,
+    selectedDistrictCode,
+    setSelectedDistrictCode,
+    selectedBlockCode,
+    setSelectedBlockCode,
+    loading: geoLoading,
+  } = useCascadingGeo();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,22 +54,70 @@ const Register: React.FC = () => {
     try {
       const internalEmail = `${formattedPhone.replace('+', '')}@farmerapp.internal`;
 
-      // Sign up the user with Supabase Auth, mapping metadata
-      const { error: authError } = await supabase.auth.signUp({
+      // 1. Sign up the user with Supabase Auth, mapping metadata
+      // NOTE: Even for staff, we create with 'farmer' role in auth metadata.
+      // The staff table linkage + approval status is what grants staff access.
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: internalEmail,
         password: password,
         options: {
           data: {
             name: name.trim(),
-            role: role,
+            role: 'farmer', // Force farmer role as harmless default
             preferred_language: i18n.language || 'en',
             mobile_number: formattedPhone,
           },
         },
       });
 
-      if (authError) {
-        throw new Error(authError.message);
+      if (authError) throw new Error(authError.message);
+      if (!authData.user) throw new Error('User creation failed.');
+
+      if (role === 'staff') {
+        // Sign in immediately to get a valid session for RLS on insert
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: internalEmail,
+          password: password,
+        });
+        
+        if (signInErr) throw new Error('Could not sign in to complete registration.');
+
+        // Insert new procurement centre (pending approval)
+        const today = new Date();
+        const nextYear = new Date();
+        nextYear.setFullYear(today.getFullYear() + 1);
+        
+        const { data: centreData, error: centreErr } = await supabase
+          .from('procurement_centres')
+          .insert({
+            name: centreName.trim(),
+            owner_name: name.trim(),
+            owner_user_id: authData.user.id,
+            block_code: parseInt(selectedBlockCode),
+            status: 'closed',
+            approval_status: 'pending',
+            daily_capacity: 0,
+            booking_window_start: today.toISOString().split('T')[0],
+            booking_window_end: nextYear.toISOString().split('T')[0],
+            cancellation_window_hours: 24
+          })
+          .select()
+          .single();
+
+        if (centreErr) throw new Error(`Failed to create centre: ${centreErr.message}`);
+
+        // Insert staff linkage
+        const { error: staffErr } = await supabase
+          .from('staff')
+          .insert({
+            user_id: authData.user.id,
+            centre_id: centreData.id
+          });
+
+        if (staffErr) throw new Error(`Failed to link staff account: ${staffErr.message}`);
+        
+        // Sign out again so they must explicitly log in
+        await supabase.auth.signOut();
       }
 
       setSuccess(true);
@@ -145,8 +209,17 @@ const Register: React.FC = () => {
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm flex items-start gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">{t('auth.reg_success')}</p>
-                <p className="mt-0.5 text-emerald-600">{t('auth.redirecting')}</p>
+                {role === 'staff' ? (
+                  <>
+                    <p className="font-semibold">Registration submitted!</p>
+                    <p className="mt-0.5 text-emerald-600">Your request to register <strong>{centreName}</strong> is awaiting admin approval. You will be able to log in once approved.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">{t('auth.reg_success')}</p>
+                    <p className="mt-0.5 text-emerald-600">{t('auth.redirecting')}</p>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -270,10 +343,86 @@ const Register: React.FC = () => {
               </div>
             </div>
 
+            {/* Centre Staff Extra Fields */}
+            {role === 'staff' && (
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Procurement Centre Details</h3>
+                
+                <div>
+                  <label htmlFor="centreName" className="block text-sm font-semibold text-slate-700 mb-1">
+                    Centre Name
+                  </label>
+                  <input
+                    id="centreName"
+                    name="centreName"
+                    type="text"
+                    required
+                    value={centreName}
+                    onChange={(e) => setCentreName(e.target.value)}
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                    placeholder="e.g. Rampur Depot B"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">State</label>
+                  <select
+                    value={selectedStateCode}
+                    onChange={(e) => setSelectedStateCode(e.target.value)}
+                    required
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  >
+                    <option value="">Select State</option>
+                    {statesList.map((state) => (
+                      <option key={state.state_code} value={state.state_code}>
+                        {state.state_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">District</label>
+                  <select
+                    value={selectedDistrictCode}
+                    onChange={(e) => setSelectedDistrictCode(e.target.value)}
+                    required
+                    disabled={!selectedStateCode}
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                  >
+                    <option value="">{selectedStateCode ? 'Select District' : 'Select State first'}</option>
+                    {districtsList.map((district) => (
+                      <option key={district.district_code} value={district.district_code}>
+                        {district.district_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Block</label>
+                  <select
+                    value={selectedBlockCode}
+                    onChange={(e) => setSelectedBlockCode(e.target.value)}
+                    required
+                    disabled={!selectedDistrictCode}
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                  >
+                    <option value="">{selectedDistrictCode ? 'Select Block' : 'Select District first'}</option>
+                    {blocksList.map((block) => (
+                      <option key={block.block_code} value={block.block_code}>
+                        {block.block_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"
-                disabled={loading || success}
+                disabled={loading || success || (role === 'staff' && (!selectedBlockCode || !centreName))}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (

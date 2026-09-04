@@ -89,29 +89,40 @@ const FarmerDashboard: React.FC = () => {
           setActiveBooking(bookings[0]);
         }
 
-        // Get past completed procurements
-        const { data: historyData, error: histErr } = await supabase
-          .from('procurements')
-          .select(`
-            id,
-            created_at,
-            quantity_accepted,
-            total_amount,
-            note,
-            bookings!inner (
-              farmer_id,
-              token,
-              product_name,
-              booking_dates ( date ),
-              procurement_centres ( name )
-            ),
-            payments ( status )
-          `)
-          .eq('bookings.farmer_id', session.user.id)
-          .order('created_at', { ascending: false });
+        // Get past completed procurements for this farmer
+        // Use subquery approach: get booking IDs first, then query procurements
+        const { data: farmerBookingIds } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('farmer_id', session.user.id);
 
-        if (!histErr && historyData) {
-          setProcurementHistory(historyData);
+        if (farmerBookingIds && farmerBookingIds.length > 0) {
+          const bookingIds = farmerBookingIds.map((b: any) => b.id);
+          const { data: historyData, error: histErr } = await supabase
+            .from('procurements')
+            .select(`
+              id,
+              created_at,
+              quantity_accepted,
+              total_amount,
+              note,
+              booking_id,
+              bookings (
+                token,
+                product_name,
+                booking_dates ( date ),
+                procurement_centres ( name )
+              ),
+              payments ( status )
+            `)
+            .in('booking_id', bookingIds)
+            .order('created_at', { ascending: false });
+
+          if (!histErr && historyData) {
+            setProcurementHistory(historyData);
+          } else if (histErr) {
+            console.error('Error fetching procurement history:', histErr);
+          }
         }
 
       } catch (err: any) {

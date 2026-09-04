@@ -8,6 +8,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCentreDetails from './pages/admin/AdminCentreDetails';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PendingApproval from './pages/centre/PendingApproval';
+import RejectedCentre from './pages/centre/RejectedCentre';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -40,6 +42,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['staff']}>
                 <CentreDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/centre/pending"
+            element={
+              <ProtectedRoute>
+                <PendingApproval />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/centre/rejected"
+            element={
+              <ProtectedRoute>
+                <RejectedCentre />
               </ProtectedRoute>
             }
           />

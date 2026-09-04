@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
+import { useCascadingGeo } from '../../hooks/useCascadingGeo';
 
 interface Centre {
   id: string;
@@ -40,19 +41,27 @@ const BookAppointment: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
   const { t } = useTranslation();
-  
+  // Geo Selection Hook
+  const {
+    statesList,
+    districtsList,
+    blocksList,
+    selectedStateCode,
+    setSelectedStateCode,
+    selectedDistrictCode,
+    setSelectedDistrictCode,
+    selectedBlockCode,
+    setSelectedBlockCode,
+    loading: geoLoading,
+    error: geoError
+  } = useCascadingGeo();
+
   // Data lists
-  const [statesList, setStatesList] = useState<{ state_code: number; state_name: string }[]>([]);
-  const [districtsList, setDistrictsList] = useState<{ district_code: number; district_name: string; state_code: number }[]>([]);
-  const [blocksList, setBlocksList] = useState<{ block_code: number; block_name: string }[]>([]);
   const [filteredCentres, setFilteredCentres] = useState<Centre[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [dates, setDates] = useState<BookingDate[]>([]);
 
   // Selection states
-  const [selectedStateCode, setSelectedStateCode] = useState('');
-  const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
-  const [selectedBlockCode, setSelectedBlockCode] = useState('');
   const [selectedCentre, setSelectedCentre] = useState<Centre | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedDate, setSelectedDate] = useState<BookingDate | null>(null);
@@ -63,7 +72,7 @@ const BookAppointment: React.FC = () => {
   const [qtyError, setQtyError] = useState<string | null>(null);
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
 
-  // Fetch session and distinct states at mount
+  // Fetch session at mount
   useEffect(() => {
     const initBookingFlow = async () => {
       try {
@@ -74,17 +83,9 @@ const BookAppointment: React.FC = () => {
           return;
         }
         setSession(session);
-
-        const { data, error } = await supabase
-          .from('distinct_states')
-          .select('*')
-          .order('state_name', { ascending: true });
-
-        if (error) throw new Error(error.message);
-        setStatesList(data || []);
       } catch (err: any) {
         console.error('Error initializing wizard:', err);
-        setError(err.message || 'Failed to load location metadata.');
+        setError(err.message || 'Failed to load user session.');
       } finally {
         setLoading(false);
       }
@@ -92,65 +93,10 @@ const BookAppointment: React.FC = () => {
     initBookingFlow();
   }, [navigate]);
 
-  // Fetch districts when state selected
+  // Handle geoError
   useEffect(() => {
-    const fetchDistricts = async () => {
-      if (!selectedStateCode) {
-        setDistrictsList([]);
-        setBlocksList([]);
-        setFilteredCentres([]);
-        setSelectedCentre(null);
-        return;
-      }
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('distinct_districts')
-          .select('*')
-          .eq('state_code', parseInt(selectedStateCode))
-          .order('district_name', { ascending: true });
-        if (error) throw error;
-        setDistrictsList(data || []);
-        setBlocksList([]);
-        setFilteredCentres([]);
-        setSelectedCentre(null);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDistricts();
-  }, [selectedStateCode]);
-
-  // Fetch blocks when district selected
-  useEffect(() => {
-    const fetchBlocks = async () => {
-      if (!selectedDistrictCode) {
-        setBlocksList([]);
-        setFilteredCentres([]);
-        setSelectedCentre(null);
-        return;
-      }
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('geo_blocks')
-          .select('block_code, block_name')
-          .eq('district_code', parseInt(selectedDistrictCode))
-          .order('block_name', { ascending: true });
-        if (error) throw error;
-        setBlocksList(data || []);
-        setFilteredCentres([]);
-        setSelectedCentre(null);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBlocks();
-  }, [selectedDistrictCode]);
+    if (geoError) setError(geoError);
+  }, [geoError]);
 
   // Fetch matching centers when block selected
   useEffect(() => {
@@ -165,8 +111,7 @@ const BookAppointment: React.FC = () => {
         const { data, error } = await supabase
           .from('procurement_centres')
           .select('*, geo_blocks(*)')
-          .eq('block_code', parseInt(selectedBlockCode))
-          .eq('status', 'open');
+          .eq('block_code', parseInt(selectedBlockCode));
         if (error) throw error;
         setFilteredCentres(data || []);
         setSelectedCentre(null);
@@ -434,7 +379,7 @@ const BookAppointment: React.FC = () => {
                   No Procurement Center found nearby
                 </h3>
                 <p className="text-red-600/80 text-sm font-medium max-w-sm mx-auto">
-                  {t('booking.no_centres', { block: blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'selected block' })}
+                  No procurement centres found in {blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'selected block'}.
                 </p>
                 <button
                   onClick={() => setStep(1)}
@@ -449,20 +394,30 @@ const BookAppointment: React.FC = () => {
                   {t('booking.showing_depots', { block: blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'selected block' })}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredCentres.map((centre) => (
+                  {filteredCentres.map((centre) => {
+                    const isOpen = centre.status === 'open';
+                    return (
                     <button
                       key={centre.id}
-                      onClick={() => setSelectedCentre(centre)}
+                      onClick={() => isOpen && setSelectedCentre(centre)}
+                      disabled={!isOpen}
                       aria-label={`Select ${centre.name}`}
-                      className={`p-6 rounded-xl border text-left cursor-pointer transition-all duration-200 w-full ${
+                      className={`relative overflow-hidden p-6 rounded-xl border text-left transition-all duration-200 w-full ${
+                        !isOpen ? 'opacity-60 bg-slate-100 border-slate-200 cursor-not-allowed' :
                         selectedCentre?.id === centre.id
-                          ? 'border-emerald-500 bg-emerald-50/20 ring-2 ring-emerald-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/20'
+                          ? 'border-emerald-500 bg-emerald-50/20 ring-2 ring-emerald-500/20 cursor-pointer'
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/20 cursor-pointer'
                       }`}
                     >
                       <div className="flex justify-between items-start">
-                        <h3 className="font-bold text-slate-800 text-lg">{centre.name}</h3>
-                        <Building className={`w-5 h-5 ${selectedCentre?.id === centre.id ? 'text-emerald-600' : 'text-slate-400'}`} />
+                        <h3 className="font-bold text-slate-800 text-lg pr-12">{centre.name}</h3>
+                        {isOpen ? (
+                          <Building className={`w-5 h-5 ${selectedCentre?.id === centre.id ? 'text-emerald-600' : 'text-slate-400'}`} />
+                        ) : (
+                          <div className="absolute top-6 right-6 bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                            Closed
+                          </div>
+                        )}
                       </div>
                       <p className="text-xs text-slate-500 mt-1">{t('booking.in_charge', { name: centre.owner_name })}</p>
                       <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
@@ -470,7 +425,8 @@ const BookAppointment: React.FC = () => {
                         <span className="font-bold text-slate-700">{centre.daily_capacity} {t('booking.slots')}</span>
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="flex justify-end pt-4">

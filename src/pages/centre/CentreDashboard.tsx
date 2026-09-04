@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Loader, Building, RefreshCw, AlertCircle, CheckCircle2, 
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
-  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil
+  Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil, X
 } from 'lucide-react';
 
 const AllBookingsTable = ({ centreId, bookingDateId }: { centreId?: string; bookingDateId?: string }) => {
@@ -102,6 +102,7 @@ const CentreDashboard: React.FC = () => {
   const [availableDates, setAvailableDates] = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [procurements, setProcurements] = useState<any[]>([]);
+  const [showNudge, setShowNudge] = useState(false);
 
   // Modal / Form States
   const [completingBooking, setCompletingBooking] = useState<any | null>(null);
@@ -205,9 +206,9 @@ const CentreDashboard: React.FC = () => {
 
       // Fetch states, districts, and blocks for cascading dropdowns
       const [statesRes, districtsRes, blocksRes] = await Promise.all([
-        supabase.rpc('get_lgd_states'),
-        stateCode ? supabase.rpc('get_lgd_districts', { p_state_code: parseInt(stateCode) }) : Promise.resolve({ data: [] }),
-        districtCode ? supabase.rpc('get_lgd_blocks', { p_district_code: parseInt(districtCode) }) : Promise.resolve({ data: [] })
+        supabase.from('distinct_states').select('*'),
+        stateCode ? supabase.from('distinct_districts').select('*').eq('state_code', parseInt(stateCode)) : Promise.resolve({ data: [] }),
+        districtCode ? supabase.from('geo_blocks').select('block_code, block_name').eq('district_code', parseInt(districtCode)) : Promise.resolve({ data: [] })
       ]);
 
       setStatesList(statesRes.data || []);
@@ -242,7 +243,7 @@ const CentreDashboard: React.FC = () => {
         .eq('centre_id', centreId);
       setProducts(prodData || []);
 
-      // 5. Fetch completed procurements for Payouts
+      // 5. Fetch completed procurements for Payouts — scoped to this centre
       const { data: procData, error: procErr } = await supabase
         .from('procurements')
         .select(`
@@ -256,7 +257,8 @@ const CentreDashboard: React.FC = () => {
           created_at,
           bookings (
             product_name,
-            users (
+            centre_id,
+            users:farmer_id (
               name
             )
           ),
@@ -273,6 +275,16 @@ const CentreDashboard: React.FC = () => {
       // Fix 3: Run auto-expire check after data loads
       if (centreId) {
         autoExpireStaleBookings(centreId);
+      }
+
+      // Check for unconfigured centre (first login nudge)
+      if (centreRow.approval_status === 'approved') {
+        const hasNoProducts = (prodData || []).length === 0;
+        const hasNoDates = (allSlots || []).length === 0;
+        const hasNoCapacity = centreRow.daily_capacity <= 0;
+        if (hasNoProducts || hasNoDates || hasNoCapacity) {
+          setShowNudge(true);
+        }
       }
 
     } catch (err: any) {
@@ -319,13 +331,9 @@ const CentreDashboard: React.FC = () => {
           .update({ status: 'no_show' })
           .eq('id', b.id);
 
-        await supabase.from('booking_history').insert({
-          booking_id: b.id,
-          previous_status: b.status,
-          new_status: 'no_show',
-          changed_by: null, // system-triggered
-          note: 'Auto-expired: booking date has passed without attendance.',
-        });
+        // Note: skip booking_history here because changed_by is NOT NULL
+        // and we have no user context in this system-triggered check.
+        // The status change itself is the audit trail.
 
         await supabase.from('notifications').insert({
           user_id: b.farmer_id,
@@ -955,10 +963,26 @@ const CentreDashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* TAB 1: QUEUE CONSOLE */}
+      {/* TAB 1: LIVE QUEUE CONSOLE */}
       {activeTab === 'queue' && (
         <div className="space-y-6">
-          {/* Stats Bar */}
+          
+          {showNudge && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm relative pr-10">
+              <span className="text-2xl mt-0.5 block shrink-0">👋</span>
+              <div>
+                <h4 className="font-bold text-amber-900">Welcome to your new depot!</h4>
+                <p className="text-amber-800 text-sm mt-1">
+                  Complete your <button onClick={() => setActiveTab('settings')} className="font-bold underline hover:text-amber-950">Depot Settings</button> (crops, capacity, operating dates) before farmers can book with you.
+                </p>
+              </div>
+              <button onClick={() => setShowNudge(false)} className="absolute top-4 right-4 text-amber-400 hover:text-amber-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
               <span className="text-xs text-slate-400 font-extrabold uppercase">Today's Bookings</span>
