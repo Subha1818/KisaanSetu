@@ -50,7 +50,7 @@ export const generateProcurementReceipt = async (procurementId: string) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(5, 150, 105); // emerald-600
-    doc.text('AgriProcure', margin, yPos);
+    doc.text('KisaanSetu', margin, yPos);
     yPos += 10;
     
     doc.setFont('helvetica', 'normal');
@@ -209,7 +209,7 @@ export const generateTokenPDF = async (bookingId: string) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(5, 150, 105); // emerald-600
-    doc.text('AgriProcure', margin, yPos);
+    doc.text('KisaanSetu', margin, yPos);
     yPos += 10;
     
     doc.setFont('helvetica', 'normal');

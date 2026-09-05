@@ -291,7 +291,7 @@ const Register: React.FC = () => {
                 <Sprout className="w-8 h-8" />
               </div>
               <span className="font-extrabold text-2xl tracking-tight">
-                AgriProcure
+                KisaanSetu
               </span>
             </Link>
 

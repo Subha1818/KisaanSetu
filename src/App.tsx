@@ -10,6 +10,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PendingApproval from './pages/centre/PendingApproval';
 import RejectedCentre from './pages/centre/RejectedCentre';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -81,6 +83,10 @@ function App() {
           {/* Auth Pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* Legal Pages */}
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
         </Routes>
       </Layout>
     </Router>

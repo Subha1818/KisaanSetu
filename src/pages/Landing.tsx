@@ -178,7 +178,7 @@ const Landing: React.FC = () => {
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 font-black text-2xl mb-2 shadow-inner ring-4 ring-white">1</div>
                 <h3 className="text-3xl font-bold text-slate-900">{t('landing.step_1')}</h3>
                 <p className="text-xl text-slate-600 leading-relaxed font-medium">
-                  Create a secure account using your mobile number and Aadhaar details to get started with AgriProcure.
+                  Create a secure account using your mobile number and Aadhaar details to get started with KisaanSetu.
                 </p>
               </div>
             </div>
@@ -431,7 +431,7 @@ const Landing: React.FC = () => {
                 <div className="p-1.5 bg-emerald-600 rounded-lg text-white">
                   <Sprout className="w-5 h-5" />
                 </div>
-                <span className="font-bold text-xl text-white tracking-tight">AgriProcure</span>
+                <span className="font-bold text-xl text-white tracking-tight">KisaanSetu</span>
               </Link>
               <p className="text-sm text-slate-500 max-w-sm leading-relaxed mb-1">
                 {t('layout.footer', { year: new Date().getFullYear() })}
@@ -453,8 +453,8 @@ const Landing: React.FC = () => {
               <h3 className="text-white font-semibold mb-4">{t('layout.footer_legal_title')}</h3>
               <ul className="space-y-3 text-sm">
                 <li><Link to="/" className="hover:text-emerald-400 transition-colors">{t('layout.footer_about')}</Link></li>
-                <li><Link to="/" className="hover:text-emerald-400 transition-colors">{t('layout.footer_privacy')}</Link></li>
-                <li><Link to="/" className="hover:text-emerald-400 transition-colors">{t('layout.footer_terms')}</Link></li>
+                <li><Link to="/privacy" className="hover:text-emerald-400 transition-colors">{t('layout.footer_privacy')}</Link></li>
+                <li><Link to="/terms" className="hover:text-emerald-400 transition-colors">{t('layout.footer_terms')}</Link></li>
               </ul>
             </div>
           </div>

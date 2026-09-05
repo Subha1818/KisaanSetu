@@ -112,7 +112,7 @@ serve(async (req) => {
     }
 
     // Send via httpSMS
-    const message = `Your AgriProcure OTP is: ${code}. Valid for 5 minutes.`
+    const message = `Your KisaanSetu OTP is: ${code}. Valid for 5 minutes.`
     const smsSent = await sendSMS(mobile_number, message)
 
     if (!smsSent) {

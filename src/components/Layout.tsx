@@ -109,7 +109,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Sprout className="w-6 h-6" />
               </div>
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent hidden sm:block">
-                AgriProcure
+                KisaanSetu
               </span>
             </Link>
 

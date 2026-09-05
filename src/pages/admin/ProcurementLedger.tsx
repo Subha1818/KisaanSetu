@@ -344,7 +344,7 @@ export const ProcurementLedger: React.FC = () => {
     const link = document.createElement('a');
     link.setAttribute('href', url);
     const dateStr = new Date().toISOString().split('T')[0];
-    link.setAttribute('download', `AgriProcure_Ledger_Report_${dateStr}.csv`);
+    link.setAttribute('download', `KisaanSetu_Ledger_Report_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
