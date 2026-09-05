@@ -11,7 +11,8 @@ import {
   AlertCircle,
   Loader, 
   Scale, 
-  ShieldCheck,
+  Eye,
+  UserCheck,
   CreditCard,
   Send,
   Calendar,
@@ -237,14 +238,14 @@ const AdminCentreDetails: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative z-0">
       <DashboardBackground variant="admin" />
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/admin')}
-            className="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-colors text-slate-600 hover:text-slate-900"
+            className="p-2.5 bg-white border border-slate-300 rounded-xl shadow-sm shadow-slate-900/5 hover:bg-slate-50 transition-colors text-slate-600 hover:text-slate-900"
             title="Return to Admin Dashboard"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -286,7 +287,7 @@ const AdminCentreDetails: React.FC = () => {
 
         {/* Read-Only Badge */}
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold border border-slate-200">
-          <ShieldCheck className="w-4 h-4 text-slate-500" />
+          <Eye className="w-4 h-4 text-slate-500" />
           Read-Only Oversight
         </div>
       </div>
@@ -294,7 +295,7 @@ const AdminCentreDetails: React.FC = () => {
       {/* 4 Core Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* 1. Daily Capacity */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Current Daily Capacity</p>
@@ -314,7 +315,7 @@ const AdminCentreDetails: React.FC = () => {
         </div>
 
         {/* 2. Farmers Served */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Total Farmers Served</p>
@@ -334,7 +335,7 @@ const AdminCentreDetails: React.FC = () => {
         </div>
 
         {/* 3. Total Quantity Procured */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Total Grain Procured</p>
@@ -354,7 +355,7 @@ const AdminCentreDetails: React.FC = () => {
         </div>
 
         {/* 4. In-Charge Name */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-indigo-300 transition-all duration-200">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">In-Charge Officer</p>
@@ -363,7 +364,7 @@ const AdminCentreDetails: React.FC = () => {
               </h3>
             </div>
             <span className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 shadow-xs">
-              <ShieldCheck className="w-6 h-6" />
+              <UserCheck className="w-6 h-6" />
             </span>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-100">
@@ -378,7 +379,7 @@ const AdminCentreDetails: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Panel 1: Crop-wise Procurement Volume */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 p-8 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -441,7 +442,7 @@ const AdminCentreDetails: React.FC = () => {
         </div>
 
         {/* Panel 2: Payment Status Breakdown */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 p-8 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">

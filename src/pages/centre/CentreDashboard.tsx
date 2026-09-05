@@ -980,33 +980,117 @@ const CentreDashboard: React.FC = () => {
       <DashboardBackground variant="centre" />
       {/* Centre Dashboard Banner */}
       {centre && (
-        <div className="bg-gradient-to-r from-blue-800 to-indigo-700 text-white rounded-2xl p-8 shadow-xl shadow-indigo-950/15 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <Building className="w-6 h-6 text-indigo-200" />
-              <span className="text-xs uppercase tracking-widest text-indigo-200 font-bold">Procurement Depot Panel</span>
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight mt-1">{centre.name}</h1>
-            <p className="text-indigo-100/90 text-sm mt-1">
-              Location: {centre.geo_blocks?.block_name}, {centre.geo_blocks?.district_name}, {centre.geo_blocks?.state_name} | In-Charge: {centre.owner_name}
-            </p>
+        <div className="bg-gradient-to-r from-blue-800 to-indigo-700 text-white rounded-2xl p-8 shadow-xl shadow-indigo-950/15 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+          {/* Minimalist Panoramic Depot Weighbridge & Intake Logistics SVG */}
+          <div className="absolute right-0 top-0 bottom-0 w-[58%] md:w-[65%] lg:w-[70%] max-w-[850px] pointer-events-none hidden md:block overflow-hidden">
+            <svg viewBox="0 0 750 220" fill="none" preserveAspectRatio="xMaxYMid meet" className="w-full h-full">
+              {/* Technical Ground & Intake Flow Contours */}
+              <path d="M0 194 Q200 164 420 186 Q620 158 750 178 L750 220 L0 220 Z" fill="white" fillOpacity="0.05" />
+              <path d="M30 208 Q260 176 500 198 Q660 178 750 196" stroke="white" strokeWidth="1" strokeOpacity="0.18" fill="none" />
+              <path d="M70 216 Q320 190 560 208 Q700 192 750 206" stroke="#38BDF8" strokeWidth="1.2" strokeOpacity="0.22" fill="none" />
+
+              {/* Distant Telemetry Nodes & Grid Flow (Extending Leftward toward Depot Title) */}
+              <circle cx="95" cy="180" r="3.5" fill="#38BDF8" fillOpacity="0.6" />
+              <circle cx="165" cy="165" r="3" fill="#FBBF24" fillOpacity="0.75" />
+              <circle cx="235" cy="175" r="3.5" fill="#34D399" fillOpacity="0.7" />
+
+              {/* Minimalist Sample Grain Stalk on Left Margin */}
+              <path d="M65 218 Q85 156 118 112" stroke="#FBBF24" strokeWidth="1.8" strokeLinecap="round" strokeOpacity="0.7" />
+              <ellipse cx="116" cy="116" rx="3.5" ry="6.5" transform="rotate(22 116 116)" fill="#FDE047" fillOpacity="0.85" />
+              <ellipse cx="111" cy="127" rx="3.5" ry="6.5" transform="rotate(-18 111 127)" fill="#FBBF24" fillOpacity="0.85" />
+              <ellipse cx="107" cy="138" rx="3.5" ry="6.5" transform="rotate(20 107 138)" fill="#F59E0B" fillOpacity="0.8" />
+              <line x1="116" y1="112" x2="130" y2="88" stroke="#FDE047" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+
+              {/* Grain Quality Testing Cylinder & Moisture Meter (Center-Left) */}
+              <g transform="translate(260, 0)">
+                <path d="M35 186 L35 146 Q35 136 43 136 L51 136 Q59 136 59 146 L59 186 Z" fill="white" fillOpacity="0.12" stroke="white" strokeWidth="1.2" strokeOpacity="0.45" />
+                <line x1="39" y1="176" x2="55" y2="176" stroke="#FBBF24" strokeWidth="1.5" strokeOpacity="0.7" />
+                <line x1="39" y1="166" x2="51" y2="166" stroke="white" strokeWidth="1" strokeOpacity="0.5" />
+                <line x1="39" y1="156" x2="55" y2="156" stroke="white" strokeWidth="1" strokeOpacity="0.5" />
+              </g>
+
+              {/* Certified Weighment Slip / Depot Pass Clipboard (Center) */}
+              <g transform="translate(350, 0)">
+                <rect x="0" y="106" width="68" height="92" rx="8" fill="white" fillOpacity="0.12" stroke="white" strokeWidth="1.4" strokeOpacity="0.45" />
+                <rect x="19" y="99" width="30" height="12" rx="3" fill="white" fillOpacity="0.35" />
+                <line x1="14" y1="126" x2="54" y2="126" stroke="white" strokeWidth="3" strokeLinecap="round" strokeOpacity="0.7" />
+                <line x1="14" y1="139" x2="46" y2="139" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+                <line x1="14" y1="151" x2="50" y2="151" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+                <line x1="14" y1="163" x2="38" y2="163" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.35" />
+                {/* Certified Checkmark Badge */}
+                <circle cx="48" cy="178" r="9" fill="#10B981" fillOpacity="0.3" stroke="#34D399" strokeWidth="1.2" />
+                <path d="M44 178 L47 181 L52 175" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </g>
+
+              {/* Electronic Platform Weighbridge Ramp & Gate Barrier (Center-Right) */}
+              <g transform="translate(470, 0)">
+                {/* Left Approach Ramp */}
+                <path d="M0 192 L28 178 L28 192 Z" fill="white" fillOpacity="0.16" stroke="white" strokeWidth="1" strokeOpacity="0.4" />
+                {/* Heavy-Duty Weighbridge Platform Surface */}
+                <rect x="28" y="178" width="125" height="14" rx="3" fill="#38BDF8" fillOpacity="0.25" stroke="white" strokeWidth="1.2" strokeOpacity="0.6" />
+                <line x1="38" y1="185" x2="143" y2="185" stroke="#FBBF24" strokeWidth="2" strokeDasharray="8 8" strokeOpacity="0.65" />
+                {/* Right Departure Ramp */}
+                <path d="M153 178 L181 192 L153 192 Z" fill="white" fillOpacity="0.16" stroke="white" strokeWidth="1" strokeOpacity="0.4" />
+
+                {/* Digital Weighment Readout Pillar */}
+                <rect x="156" y="110" width="20" height="70" rx="3" fill="white" fillOpacity="0.18" stroke="white" strokeWidth="1.2" strokeOpacity="0.5" />
+                <rect x="147" y="115" width="38" height="22" rx="4" fill="#0F172A" fillOpacity="0.65" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.8" />
+                <text x="166" y="129" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#34D399" letterSpacing="0.5">SCALE</text>
+
+                {/* Gate Barrier Post & Striped Boom Arm */}
+                <rect x="22" y="148" width="8" height="36" rx="2" fill="white" fillOpacity="0.4" />
+                <line x1="26" y1="154" x2="105" y2="154" stroke="#FBBF24" strokeWidth="3" strokeLinecap="round" strokeOpacity="0.8" />
+                <line x1="36" y1="154" x2="48" y2="154" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                <line x1="60" y1="154" x2="72" y2="154" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                <line x1="84" y1="154" x2="96" y2="154" stroke="white" strokeWidth="3" strokeLinecap="round" />
+              </g>
+
+              {/* Modern Cylindrical Grain Silos & Elevator Chute (Far Right) */}
+              <g transform="translate(660, 0)">
+                {/* Silo 1 */}
+                <rect x="10" y="66" width="32" height="114" rx="6" fill="white" fillOpacity="0.14" stroke="white" strokeWidth="1.2" strokeOpacity="0.3" />
+                <path d="M10 66 Q26 46 42 66 Z" fill="#38BDF8" fillOpacity="0.3" stroke="white" strokeWidth="1" strokeOpacity="0.4" />
+                <line x1="10" y1="96" x2="42" y2="96" stroke="white" strokeWidth="0.8" strokeOpacity="0.25" />
+                <line x1="10" y1="126" x2="42" y2="126" stroke="white" strokeWidth="0.8" strokeOpacity="0.25" />
+
+                {/* Silo 2 */}
+                <rect x="48" y="56" width="30" height="124" rx="6" fill="white" fillOpacity="0.12" stroke="white" strokeWidth="1.2" strokeOpacity="0.3" />
+                <path d="M48 56 Q63 36 78 56 Z" fill="#38BDF8" fillOpacity="0.25" stroke="white" strokeWidth="1" strokeOpacity="0.4" />
+
+                {/* Angled Intake Elevator Chute */}
+                <line x1="-30" y1="150" x2="20" y2="76" stroke="#38BDF8" strokeWidth="3" strokeOpacity="0.6" strokeLinecap="round" />
+                <line x1="-30" y1="150" x2="20" y2="76" stroke="white" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.75" />
+              </g>
+            </svg>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => fetchCentreData(true)}
-              className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-colors shadow-inner"
-              title="Manual Refresh"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
-            <span className={`px-4 py-2 rounded-xl text-sm font-bold border ${
-              centre.status === 'open' 
-                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' 
-                : 'bg-red-500/10 text-red-300 border-red-500/30'
-            }`}>
-              {centre.status === 'open' ? 'Open' : 'Closed'}
-            </span>
+          <div className="relative z-10 max-w-xl">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-indigo-200 border border-white/10">
+                <Building className="w-3.5 h-3.5 text-indigo-300" />
+                Procurement Depot Panel
+              </span>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border backdrop-blur-md ${
+                centre.status === 'open' 
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
+                  : 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${centre.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></span>
+                {centre.status === 'open' ? 'Depot Open' : 'Depot Closed'}
+              </span>
+              <button
+                onClick={() => fetchCentreData(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white rounded-full border border-white/10 text-xs font-bold transition-all backdrop-blur-md shadow-xs"
+                title="Sync / Refresh live depot data"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Sync</span>
+              </button>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight mt-1">{centre.name}</h1>
+            <p className="text-indigo-100/90 text-sm mt-1 max-w-lg leading-relaxed">
+              Location: {centre.geo_blocks?.block_name}, {centre.geo_blocks?.district_name}, {centre.geo_blocks?.state_name} | In-Charge: {centre.owner_name}
+            </p>
           </div>
         </div>
       )}

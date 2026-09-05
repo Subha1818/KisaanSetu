@@ -171,7 +171,7 @@ export const SmsDeliveryMonitor: React.FC = () => {
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total SMS Dispatched */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Total SMS Logged</p>
@@ -187,7 +187,7 @@ export const SmsDeliveryMonitor: React.FC = () => {
         </div>
 
         {/* Successfully Delivered */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Successfully Sent</p>
@@ -205,10 +205,10 @@ export const SmsDeliveryMonitor: React.FC = () => {
         {/* Failed Messages (Clickable filter - Amber Accent for Needs Attention) */}
         <div 
           onClick={() => setStatusFilter(statusFilter === 'failed' ? 'all' : 'failed')}
-          className={`p-6 rounded-2xl border shadow-sm transition-all duration-200 cursor-pointer ${
+          className={`p-6 rounded-2xl transition-all duration-200 cursor-pointer ${
             metrics.failed > 0 
-              ? 'bg-amber-50/60 border-amber-300 hover:border-amber-400 shadow-sm shadow-amber-900/5' 
-              : 'bg-white border-slate-200 hover:shadow-md'
+              ? 'bg-amber-50/60 border-2 border-amber-300 hover:border-amber-400 shadow-sm shadow-amber-900/5' 
+              : 'bg-white border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md'
           }`}
           title="Click to filter failed messages"
         >
@@ -231,7 +231,7 @@ export const SmsDeliveryMonitor: React.FC = () => {
         </div>
 
         {/* Pending Queue */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">In Dispatch Queue</p>
@@ -248,7 +248,7 @@ export const SmsDeliveryMonitor: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-300 p-6 shadow-sm shadow-slate-900/5 space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           
           {/* Search Box */}
@@ -336,7 +336,7 @@ export const SmsDeliveryMonitor: React.FC = () => {
       </div>
 
       {/* SMS Logs Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-500">
             <Loader className="w-8 h-8 text-indigo-600 animate-spin mb-3" />

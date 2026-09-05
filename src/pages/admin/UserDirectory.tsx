@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Users, Search, Phone, Calendar, Shield, Loader, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Users, Search, Phone, Calendar, Layers, Loader, CheckCircle2, RefreshCw } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 interface SystemUser {
@@ -86,7 +86,7 @@ export const UserDirectory: React.FC = () => {
       case 'admin':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
-            <Shield className="w-3 h-3 text-purple-600" />
+            <Layers className="w-3 h-3 text-purple-600" />
             Administrator
           </span>
         );
@@ -114,7 +114,7 @@ export const UserDirectory: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Search and Filters Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-300 p-6 shadow-sm shadow-slate-900/5">
         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
           
           {/* Search Box */}
@@ -125,7 +125,7 @@ export const UserDirectory: React.FC = () => {
               placeholder="Search by name or mobile number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm placeholder:text-slate-400"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm placeholder:text-slate-400"
             />
           </div>
 
@@ -190,7 +190,7 @@ export const UserDirectory: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-500">
             <Loader className="w-8 h-8 text-indigo-600 animate-spin mb-3" />

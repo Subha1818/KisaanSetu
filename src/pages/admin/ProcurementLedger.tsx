@@ -366,7 +366,7 @@ export const ProcurementLedger: React.FC = () => {
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Quantity Procured */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-indigo-400 transition-all duration-200">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Total Quantity Procured</p>
@@ -385,7 +385,7 @@ export const ProcurementLedger: React.FC = () => {
         </div>
 
         {/* Total Amount Disbursed */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-200">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-emerald-400 transition-all duration-200">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Total Procurement Value</p>
@@ -406,7 +406,7 @@ export const ProcurementLedger: React.FC = () => {
         </div>
 
         {/* Payment Pipeline */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-200">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-amber-400 transition-all duration-200">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Payout Pipeline</p>
@@ -425,7 +425,7 @@ export const ProcurementLedger: React.FC = () => {
         </div>
 
         {/* Total Receipts */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-200">
+        <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-blue-400 transition-all duration-200">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-slate-500">Certified Transactions</p>
@@ -444,7 +444,7 @@ export const ProcurementLedger: React.FC = () => {
       </div>
 
       {/* Filter and Export Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-300 p-6 shadow-sm shadow-slate-900/5 space-y-4">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           
           {/* Search Box */}
@@ -606,7 +606,7 @@ export const ProcurementLedger: React.FC = () => {
       )}
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-500">
             <Loader className="w-8 h-8 text-indigo-600 animate-spin mb-3" />

@@ -1,6 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Users, Building, Clock, Package, Loader, ArrowRight, CheckCircle2, XCircle, FileSpreadsheet, Smartphone, History, Coins } from 'lucide-react';
+import { 
+  Users, 
+  Building, 
+  Clock, 
+  Package, 
+  Loader, 
+  ArrowRight, 
+  CheckCircle2, 
+  XCircle, 
+  FileSpreadsheet, 
+  Smartphone, 
+  History, 
+  Coins, 
+  TrendingUp, 
+  Layers 
+} from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  CartesianGrid, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Legend 
+} from 'recharts';
 import { supabase } from '../../lib/supabaseClient';
 import UserDirectory from './UserDirectory';
 import ProcurementLedger from './ProcurementLedger';
@@ -33,6 +61,17 @@ interface RoleCounts {
   admins: number;
 }
 
+interface DailyProcurement {
+  date: string;
+  quantity: number;
+}
+
+interface ApprovalChartItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'depots' | 'users' | 'ledger' | 'sms' | 'activity' | 'msp'>('depots');
@@ -48,6 +87,12 @@ const AdminDashboard: React.FC = () => {
   const [totalApprovedCount, setTotalApprovedCount] = useState<number>(0);
   const [roleCounts, setRoleCounts] = useState<RoleCounts>({ total: 0, farmers: 0, staff: 0, admins: 0 });
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+
+  // Lightweight charts states (recharts)
+  const [procurement7Days, setProcurement7Days] = useState<DailyProcurement[]>([]);
+  const [sevenDaysTotal, setSevenDaysTotal] = useState<number>(0);
+  const [approvalPieData, setApprovalPieData] = useState<ApprovalChartItem[]>([]);
+  const [totalCentresCount, setTotalCentresCount] = useState<number>(0);
 
   const fetchDashboardData = async () => {
     try {
@@ -106,20 +151,40 @@ const AdminDashboard: React.FC = () => {
         .eq('approval_status', 'pending')
         .order('created_at', { ascending: false });
 
+      // 6. Centre approval status breakdown for Donut Chart (Approved / Pending / Rejected)
+      const centresStatusPromise = supabase
+        .from('procurement_centres')
+        .select('approval_status');
+
+      // 7. Last 7 days procurement intake volume for Line Chart
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      const recentProcurementsPromise = supabase
+        .from('procurements')
+        .select('created_at, quantity_accepted')
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: true });
+
       const [
         activeRes,
         totalApprovedRes,
         usersRes,
         pendingCountRes,
         centreListRes,
-        pendingListRes
+        pendingListRes,
+        centresStatusRes,
+        recentProcurementsRes
       ] = await Promise.all([
         activeCentresPromise,
         totalApprovedPromise,
         usersPromise,
         pendingCountPromise,
         centreListPromise,
-        pendingListPromise
+        pendingListPromise,
+        centresStatusPromise,
+        recentProcurementsPromise
       ]);
 
       if (activeRes.error) {
@@ -165,6 +230,57 @@ const AdminDashboard: React.FC = () => {
       if (pendingListRes.error) throw pendingListRes.error;
       setPendingCentres(pendingListRes.data || []);
 
+      // Process Donut Chart data (Centre Approvals Status)
+      if (centresStatusRes.data) {
+        let approved = 0;
+        let pending = 0;
+        let rejected = 0;
+        for (const c of centresStatusRes.data) {
+          if (c.approval_status === 'approved') approved++;
+          else if (c.approval_status === 'pending') pending++;
+          else if (c.approval_status === 'rejected') rejected++;
+        }
+        setTotalCentresCount(centresStatusRes.data.length);
+        setApprovalPieData([
+          { name: 'Approved', value: approved, color: '#10B981' },
+          { name: 'Pending', value: pending, color: '#F59E0B' },
+          { name: 'Rejected', value: rejected, color: '#EF4444' }
+        ]);
+      }
+
+      // Process Line Chart data (Procurement Last 7 Days)
+      const daysMap = new Map<string, number>();
+      const datesList: { key: string; label: string }[] = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        daysMap.set(key, 0);
+        datesList.push({ key, label });
+      }
+
+      let total7d = 0;
+      if (recentProcurementsRes.data) {
+        for (const p of recentProcurementsRes.data) {
+          const pDate = p.created_at ? p.created_at.split('T')[0] : '';
+          const qty = Number(p.quantity_accepted || 0);
+          if (daysMap.has(pDate)) {
+            daysMap.set(pDate, (daysMap.get(pDate) || 0) + qty);
+            total7d += qty;
+          }
+        }
+      }
+
+      const formatted7DaysData: DailyProcurement[] = datesList.map(({ key, label }) => ({
+        date: label,
+        quantity: daysMap.get(key) || 0
+      }));
+
+      setProcurement7Days(formatted7DaysData);
+      setSevenDaysTotal(total7d);
+
     } catch (err) {
       console.error('Error fetching admin stats:', err);
     } finally {
@@ -207,33 +323,202 @@ const AdminDashboard: React.FC = () => {
     }
   };
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative z-0">
       <DashboardBackground variant="admin" />
 
-      {/* Hero Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl p-8 shadow-xl shadow-slate-950/15 border border-slate-700/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
+      {/* Hero Header - Deep Navy/Indigo Gradient with Indian Agricultural Government Procurement Panoramic Illustration */}
+      <div className="bg-gradient-to-r from-[#1e2a5e] to-[#2d3a7a] text-white rounded-2xl p-8 shadow-xl shadow-indigo-950/20 border border-indigo-900/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+        {/* Panoramic Indian Agricultural & Government Procurement SVG extending left till the text */}
+        <div className="absolute right-0 top-0 bottom-0 w-[58%] md:w-[65%] lg:w-[70%] max-w-[900px] pointer-events-none hidden md:block overflow-hidden">
+          <svg viewBox="0 0 800 220" fill="none" preserveAspectRatio="xMaxYMid meet" className="w-full h-full">
+            {/* Defs for soft left-edge fade so stalks seamlessly blend near the text */}
+            <defs>
+              <linearGradient id="agriLeftFade" x1="0" y1="0" x2="160" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#1e2a5e" stopOpacity="0" />
+                <stop offset="100%" stopColor="#1e2a5e" stopOpacity="1" />
+              </linearGradient>
+            </defs>
+
+            {/* Radiant Dawn Sun over the Mandi Horizon (Far Right) */}
+            <circle cx="650" cy="85" r="50" fill="#FBBF24" fillOpacity="0.22" />
+            <circle cx="650" cy="85" r="32" fill="#FDE047" fillOpacity="0.25" />
+            {/* Sunburst Rays */}
+            <line x1="650" y1="25" x2="650" y2="12" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="605" y1="42" x2="592" y2="30" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="695" y1="42" x2="708" y2="30" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="585" y1="85" x2="570" y2="85" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="715" y1="85" x2="730" y2="85" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+
+            {/* Birds in the morning sky */}
+            <path d="M260 40 Q270 32 280 40 Q290 32 300 40" stroke="white" strokeWidth="1.5" strokeOpacity="0.35" fill="none" />
+            <path d="M315 30 Q323 24 331 30 Q339 24 347 30" stroke="white" strokeWidth="1.2" strokeOpacity="0.3" fill="none" />
+            <path d="M380 46 Q390 38 400 46 Q410 38 420 46" stroke="white" strokeWidth="1.3" strokeOpacity="0.28" fill="none" />
+
+            {/* Distant Rolling Agricultural Fields & Terraced Furrows */}
+            <path d="M20 185 Q180 145 360 170 Q540 140 800 165 L800 220 L20 220 Z" fill="#34D399" fillOpacity="0.07" />
+            <path d="M0 198 Q200 162 420 188 Q620 155 800 178 L800 220 L0 220 Z" fill="white" fillOpacity="0.05" />
+            
+            {/* Field Furrow Contour Lines */}
+            <path d="M40 210 Q240 175 480 200 Q660 175 800 195" stroke="white" strokeWidth="1" strokeOpacity="0.18" fill="none" />
+            <path d="M80 218 Q300 190 540 210 Q700 190 800 205" stroke="#FBBF24" strokeWidth="1" strokeOpacity="0.2" fill="none" />
+
+            {/* Layer 1: Indian Government Mandi / Regional Grain Depot Architecture (Far Right) */}
+            <g transform="translate(630, 0)">
+              {/* Background Grain Silo Cylinders */}
+              <rect x="105" y="65" width="28" height="115" rx="5" fill="white" fillOpacity="0.12" stroke="white" strokeWidth="1" strokeOpacity="0.25" />
+              <path d="M105 65 Q119 46 133 65 Z" fill="#FBBF24" fillOpacity="0.3" stroke="white" strokeWidth="1" strokeOpacity="0.35" />
+              <line x1="105" y1="95" x2="133" y2="95" stroke="white" strokeWidth="0.8" strokeOpacity="0.25" />
+              <line x1="105" y1="125" x2="133" y2="125" stroke="white" strokeWidth="0.8" strokeOpacity="0.25" />
+
+              {/* Mandi Depot Intake Pavilion Building */}
+              <rect x="0" y="105" width="95" height="80" rx="3" fill="white" fillOpacity="0.14" stroke="white" strokeWidth="1.2" strokeOpacity="0.35" />
+              
+              {/* Classical Indian Chhatri / Arched Dome Roof */}
+              <path d="M-8 105 Q47 52 103 105 Z" fill="#FBBF24" fillOpacity="0.32" stroke="white" strokeWidth="1.5" strokeOpacity="0.55" />
+              {/* Kalash & Finial on Mandi Dome */}
+              <path d="M47 52 L47 38 M43 45 L51 45 M44 37 L50 37 L47 30 Z" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" />
+
+              {/* Cusped Traditional Indian Arch Entrance Gate */}
+              <path d="M16 185 L16 148 Q47 128 78 148 L78 185 Z" fill="#141E46" fillOpacity="0.75" stroke="white" strokeWidth="1.5" strokeOpacity="0.6" />
+              
+              {/* Classical Mandi Pillars */}
+              <rect x="8" y="118" width="6" height="67" rx="1" fill="white" fillOpacity="0.45" />
+              <rect x="26" y="118" width="6" height="67" rx="1" fill="white" fillOpacity="0.35" />
+              <rect x="62" y="118" width="6" height="67" rx="1" fill="white" fillOpacity="0.35" />
+              <rect x="80" y="118" width="6" height="67" rx="1" fill="white" fillOpacity="0.45" />
+
+              {/* Official Mandi Depot Signboard */}
+              <rect x="12" y="110" width="70" height="11" rx="2" fill="#38BDF8" fillOpacity="0.35" stroke="white" strokeWidth="0.8" strokeOpacity="0.6" />
+              <text x="47" y="118" textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="white" fillOpacity="0.9" letterSpacing="1">MANDI DEPOT</text>
+            </g>
+
+            {/* Layer 2: Stack of Certified Government Procurement Jute Sacks (Bori) with Official MSP Seal */}
+            <g transform="translate(520, 0)">
+              {/* Bottom Sacks */}
+              <rect x="5" y="172" width="56" height="24" rx="7" fill="#F59E0B" fillOpacity="0.4" stroke="white" strokeWidth="1.2" strokeOpacity="0.6" />
+              <circle cx="8" cy="175" r="2.5" fill="#FBBF24" />
+              <circle cx="58" cy="175" r="2.5" fill="#FBBF24" />
+
+              <rect x="55" y="174" width="54" height="24" rx="7" fill="#F59E0B" fillOpacity="0.35" stroke="white" strokeWidth="1.2" strokeOpacity="0.5" />
+              <circle cx="58" cy="177" r="2.5" fill="#FBBF24" />
+              <circle cx="106" cy="177" r="2.5" fill="#FBBF24" />
+
+              {/* Top Sack with Certified Government MSP Stencil */}
+              <rect x="28" y="152" width="58" height="24" rx="7" fill="#FBBF24" fillOpacity="0.5" stroke="white" strokeWidth="1.3" strokeOpacity="0.75" />
+              <circle cx="31" cy="155" r="2.5" fill="#FDE047" />
+              <circle cx="83" cy="155" r="2.5" fill="#FDE047" />
+
+              {/* Official Circular Stencil Seal */}
+              <circle cx="57" cy="164" r="8.5" stroke="white" strokeWidth="1" strokeOpacity="0.9" fill="#1E2A5E" fillOpacity="0.5" />
+              <text x="57" y="167" textAnchor="middle" fontSize="6.5" fontWeight="900" fill="white" fillOpacity="0.95" letterSpacing="0.8">MSP</text>
+            </g>
+
+            {/* Layer 3: Indian Farm Tractor with Grain Trolley delivering Harvest */}
+            <g transform="translate(410, 0)">
+              {/* Trolley Laden with Harvest Wheat/Paddy */}
+              <rect x="0" y="172" width="46" height="22" rx="3" fill="white" fillOpacity="0.22" stroke="white" strokeWidth="1.2" strokeOpacity="0.6" />
+              <circle cx="23" cy="195" r="7.5" stroke="white" strokeWidth="2" strokeOpacity="0.85" fill="#141E46" fillOpacity="0.65" />
+              {/* Mounded Golden Grain in Trolley */}
+              <path d="M1 172 Q23 154 45 172 Z" fill="#FBBF24" fillOpacity="0.65" stroke="white" strokeWidth="0.8" strokeOpacity="0.6" />
+
+              {/* Hitch connector */}
+              <line x1="46" y1="188" x2="53" y2="188" stroke="white" strokeWidth="2" />
+
+              {/* Tractor Big Rear Wheel */}
+              <circle cx="68" cy="186" r="16" stroke="white" strokeWidth="2.5" strokeOpacity="0.9" fill="#141E46" fillOpacity="0.65" />
+              <circle cx="68" cy="186" r="6" fill="#FBBF24" fillOpacity="0.9" />
+
+              {/* Tractor Front Wheel */}
+              <circle cx="106" cy="193" r="9" stroke="white" strokeWidth="2" strokeOpacity="0.9" fill="#141E46" fillOpacity="0.65" />
+              <circle cx="106" cy="193" r="3.5" fill="#FBBF24" fillOpacity="0.8" />
+
+              {/* Tractor Hood / Bonnet in Agricultural Emerald Green */}
+              <path d="M68 171 L88 171 L108 178 L112 193 L82 193 L68 180 Z" fill="#34D399" fillOpacity="0.6" stroke="white" strokeWidth="1.3" strokeOpacity="0.75" />
+              
+              {/* Exhaust Silencer Pipe */}
+              <line x1="100" y1="174" x2="100" y2="156" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              
+              {/* Steering Wheel and Driver Canopy Seat */}
+              <path d="M70 169 L76 161 M62 171 L66 163" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+            </g>
+
+            {/* Layer 4: Majestic Golden Wheat & Paddy Stalks Extending Lengthy to the Left till the Text */}
+            <g>
+              {/* Leftmost Wheat Stalk 1 (Near text: x=25 to 105, y=65 to 220) */}
+              <path d="M25 218 Q50 145 88 72" stroke="#FBBF24" strokeWidth="2.2" strokeLinecap="round" strokeOpacity="0.85" />
+              {/* Wheat Grain Beads */}
+              <ellipse cx="86" cy="76" rx="4.5" ry="8" transform="rotate(25 86 76)" fill="#FDE047" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="80" cy="88" rx="4.5" ry="8" transform="rotate(-15 80 88)" fill="#FBBF24" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="76" cy="100" rx="4.5" ry="8" transform="rotate(22 76 100)" fill="#F59E0B" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="70" cy="112" rx="4.5" ry="8" transform="rotate(-18 70 112)" fill="#FBBF24" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="66" cy="124" rx="4.5" ry="8" transform="rotate(20 66 124)" fill="#F59E0B" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="60" cy="136" rx="4.5" ry="8" transform="rotate(-15 60 136)" fill="#FBBF24" fillOpacity="0.8" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="56" cy="148" rx="4.5" ry="8" transform="rotate(18 56 148)" fill="#F59E0B" fillOpacity="0.8" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              {/* Wheat Awn Whiskers spreading upward */}
+              <line x1="86" y1="72" x2="104" y2="38" stroke="#FDE047" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+              <line x1="83" y1="76" x2="108" y2="50" stroke="#FDE047" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+              <line x1="80" y1="82" x2="106" y2="65" stroke="#FBBF24" strokeWidth="1" strokeOpacity="0.65" strokeLinecap="round" />
+
+              {/* Tall Wheat Stalk 2 (x=95 to 185, y=45 to 220) */}
+              <path d="M100 220 Q128 128 160 48" stroke="#FBBF24" strokeWidth="2.4" strokeLinecap="round" strokeOpacity="0.9" />
+              <ellipse cx="158" cy="52" rx="4.5" ry="8.5" transform="rotate(22 158 52)" fill="#FDE047" fillOpacity="0.95" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="152" cy="65" rx="4.5" ry="8.5" transform="rotate(-18 152 65)" fill="#FBBF24" fillOpacity="0.95" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="147" cy="78" rx="4.5" ry="8.5" transform="rotate(20 147 78)" fill="#F59E0B" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="141" cy="91" rx="4.5" ry="8.5" transform="rotate(-15 141 91)" fill="#FBBF24" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="136" cy="104" rx="4.5" ry="8.5" transform="rotate(20 136 104)" fill="#F59E0B" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="130" cy="117" rx="4.5" ry="8.5" transform="rotate(-15 130 117)" fill="#FBBF24" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="125" cy="130" rx="4.5" ry="8.5" transform="rotate(18 125 130)" fill="#F59E0B" fillOpacity="0.8" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              {/* Whiskers */}
+              <line x1="158" y1="46" x2="178" y2="16" stroke="#FDE047" strokeWidth="1.3" strokeOpacity="0.8" strokeLinecap="round" />
+              <line x1="155" y1="52" x2="184" y2="28" stroke="#FDE047" strokeWidth="1.3" strokeOpacity="0.8" strokeLinecap="round" />
+              <line x1="152" y1="58" x2="182" y2="44" stroke="#FBBF24" strokeWidth="1.1" strokeOpacity="0.7" strokeLinecap="round" />
+
+              {/* Wheat Stalk 3 (x=175 to 265, y=55 to 220) */}
+              <path d="M180 220 Q205 132 238 58" stroke="#FBBF24" strokeWidth="2.2" strokeLinecap="round" strokeOpacity="0.85" />
+              <ellipse cx="236" cy="62" rx="4.5" ry="8" transform="rotate(20 236 62)" fill="#FDE047" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="230" cy="74" rx="4.5" ry="8" transform="rotate(-18 230 74)" fill="#FBBF24" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="225" cy="87" rx="4.5" ry="8" transform="rotate(20 225 87)" fill="#F59E0B" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="219" cy="100" rx="4.5" ry="8" transform="rotate(-15 219 100)" fill="#FBBF24" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="214" cy="113" rx="4.5" ry="8" transform="rotate(18 214 113)" fill="#F59E0B" fillOpacity="0.8" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              {/* Whiskers */}
+              <line x1="236" y1="56" x2="256" y2="26" stroke="#FDE047" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+              <line x1="233" y1="62" x2="262" y2="38" stroke="#FDE047" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+
+              {/* Arching Paddy (Dhan) Panicle 1 (x=245 to 350, y=75 to 220) */}
+              <path d="M250 220 Q290 120 330 82 Q355 92 342 132" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.8" />
+              {/* Drooping Rice Grain Beads */}
+              <circle cx="332" cy="86" r="3.8" fill="#34D399" fillOpacity="0.85" />
+              <circle cx="340" cy="94" r="3.8" fill="#FBBF24" fillOpacity="0.85" />
+              <circle cx="346" cy="106" r="3.8" fill="#FBBF24" fillOpacity="0.85" />
+              <circle cx="344" cy="118" r="3.8" fill="#34D399" fillOpacity="0.85" />
+              <circle cx="339" cy="128" r="3.5" fill="#FBBF24" fillOpacity="0.8" />
+
+              {/* Arching Paddy Panicle 2 (x=315 to 405, y=90 to 220) */}
+              <path d="M320 220 Q355 130 388 98 Q410 106 400 142" stroke="#34D399" strokeWidth="1.8" strokeLinecap="round" strokeOpacity="0.75" />
+              <circle cx="390" cy="102" r="3.5" fill="#34D399" fillOpacity="0.8" />
+              <circle cx="397" cy="110" r="3.5" fill="#FBBF24" fillOpacity="0.8" />
+              <circle cx="403" cy="122" r="3.5" fill="#FBBF24" fillOpacity="0.8" />
+              <circle cx="401" cy="134" r="3.5" fill="#34D399" fillOpacity="0.8" />
+            </g>
+          </svg>
+        </div>
+
+        <div className="relative z-10 max-w-xl">
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              National Procurement Portal
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-indigo-200 border border-white/10">
+              <Building className="w-3.5 h-3.5 text-indigo-300" />
+              Administrative Operations Portal
             </span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">Admin Executive Panel</h1>
-          <p className="mt-1 text-slate-300 text-sm max-w-2xl">
-            Centralized oversight authority. Regulate regional depots, monitor live transactions, inspect delivery gateways, and govern MSP benchmarks.
+          <p className="mt-1 text-indigo-100/90 text-sm max-w-lg leading-relaxed">
+            Centralized platform oversight. Regulate depots, monitor transaction ledgers, inspect delivery gateways, and set MSP benchmarks.
           </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-xs font-semibold text-slate-200">
-            Role: <strong className="text-white font-bold">Administrator</strong>
-          </div>
         </div>
       </div>
 
-      {/* Navigation Tabs - Restyled matching Centre Dashboard pattern */}
-      <div className="flex gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto whitespace-nowrap">
+      {/* Navigation Tabs - Crisp thin border */}
+      <div className="flex gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 overflow-x-auto whitespace-nowrap">
         <button
           onClick={() => setActiveTab('depots')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
@@ -318,7 +603,7 @@ const AdminDashboard: React.FC = () => {
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Active Centres */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-200">
+            <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-emerald-400 transition-all duration-200">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Active Centres</p>
@@ -340,7 +625,7 @@ const AdminDashboard: React.FC = () => {
             {/* Total Registered */}
             <div 
               onClick={() => setActiveTab('users')}
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 cursor-pointer group"
+              className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-indigo-400 transition-all duration-200 cursor-pointer group"
               title="Click to view User Directory"
             >
               <div className="flex justify-between items-start">
@@ -362,10 +647,10 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Pending Approvals (Amber Accent) */}
-            <div className={`p-6 rounded-2xl border transition-all duration-200 ${
+            <div className={`p-6 rounded-2xl transition-all duration-200 ${
               pendingApprovalsCount > 0 
-                ? 'bg-amber-50/40 border-amber-300 shadow-sm shadow-amber-900/5 hover:border-amber-400' 
-                : 'bg-white border-slate-200 shadow-sm hover:shadow-md'
+                ? 'bg-amber-50/50 border-2 border-amber-300 shadow-sm shadow-amber-900/5 hover:border-amber-400' 
+                : 'bg-white border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-amber-300'
             }`}>
               <div className="flex justify-between items-start">
                 <div>
@@ -390,18 +675,133 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* System Role */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md hover:border-indigo-400 transition-all duration-200">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-medium text-slate-500">System Role</p>
                   <h3 className="text-2xl font-bold text-slate-900 mt-2">Administrator</h3>
                 </div>
                 <span className="p-3 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 shadow-xs">
-                  <ShieldCheck className="w-6 h-6" />
+                  <Layers className="w-6 h-6" />
                 </span>
               </div>
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <span className="text-xs text-slate-500 font-medium">Role: Administrator</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row: Procurement Overview & Depot Approval Status */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Chart 1: Procurement Overview (Last 7 Days) */}
+            <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-indigo-600" />
+                    Procurement Overview (Last 7 Days)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Daily accepted intake volume aggregated across registered depots
+                  </p>
+                </div>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 self-start sm:self-auto">
+                  {sevenDaysTotal.toLocaleString()} kg total
+                </span>
+              </div>
+
+              <div className="h-64 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={procurement7Days} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#94A3B8" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={{ stroke: '#E2E8F0' }} 
+                    />
+                    <YAxis 
+                      stroke="#94A3B8" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={{ stroke: '#E2E8F0' }} 
+                      tickFormatter={(val) => `${val}kg`}
+                    />
+                    <Tooltip 
+                      formatter={(val: any) => [`${Number(val).toLocaleString()} kg`, 'Volume Procured']}
+                      labelStyle={{ fontWeight: 'bold', color: '#0F172A' }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="quantity" 
+                      name="Procured Volume" 
+                      stroke="#4F46E5" 
+                      strokeWidth={2.5} 
+                      dot={{ r: 4, fill: '#4F46E5', strokeWidth: 2, stroke: '#FFFFFF' }} 
+                      activeDot={{ r: 6, fill: '#4338CA' }} 
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Chart 2: Centre Approval Status Breakdown Donut Chart */}
+            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Building className="w-4 h-4 text-indigo-600" />
+                    Centre Approval Status
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Distribution across registered depots
+                  </p>
+                </div>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 self-start sm:self-auto">
+                  {totalCentresCount} Total Depots
+                </span>
+              </div>
+
+              <div className="h-64 w-full relative flex items-center justify-center">
+                {totalCentresCount === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-xs">
+                    No procurement centre records registered yet.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={approvalPieData}
+                        cx="50%"
+                        cy="45%"
+                        innerRadius={55}
+                        outerRadius={80}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {approvalPieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(val: any) => [`${val} Depots`, 'Count']}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36} 
+                        iconType="circle"
+                        formatter={(val, entry: any) => (
+                          <span className="text-xs font-bold text-slate-700">
+                            {val}: {entry.payload?.value || 0}
+                          </span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
           </div>
@@ -411,7 +811,7 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-amber-50 rounded-2xl border border-amber-200 p-8 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-amber-900 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-amber-600" />
+              <Clock className="w-5 h-5 text-amber-600" />
               Centre Approval Requests
             </h2>
             <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase">
@@ -492,7 +892,7 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Centres List Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-300 p-8 shadow-sm shadow-slate-900/5">
         <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
           <Building className="w-5 h-5 text-indigo-600" />
           Active Procurement Centres
@@ -512,7 +912,7 @@ const AdminDashboard: React.FC = () => {
               <div 
                 key={centre.centre_id} 
                 onClick={() => navigate(`/admin/centre/${centre.centre_id}`)}
-                className="border border-slate-200 rounded-xl p-6 hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer bg-white group flex flex-col justify-between"
+                className="border border-slate-300 rounded-xl p-6 hover:shadow-md hover:border-indigo-400 transition-all duration-200 cursor-pointer bg-white group flex flex-col justify-between shadow-xs"
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">

@@ -226,7 +226,7 @@ export const MspRatesManager: React.FC = () => {
       )}
 
       {/* Header & Actions Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-slate-300 p-6 shadow-sm shadow-slate-900/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
@@ -347,110 +347,121 @@ export const MspRatesManager: React.FC = () => {
           <p className="text-sm text-slate-400 mt-1">Add your first crop support price using the button above.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rates.map((rate) => {
-            const isEditing = editingCropId === rate.id;
-            const ratePerQuintal = Math.round(Number(rate.rate_per_kg) * 100);
+        <div className="bg-white rounded-2xl border border-slate-300 shadow-sm shadow-slate-900/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-6">Crop Name</th>
+                  <th className="py-3 px-6">Rate (₹/quintal)</th>
+                  <th className="py-3 px-6">Rate (₹/kg)</th>
+                  <th className="py-3 px-6">Effective Date</th>
+                  <th className="py-3 px-6">Last Updated</th>
+                  <th className="py-3 px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rates.map((rate) => {
+                  const isEditing = editingCropId === rate.id;
+                  const ratePerQuintal = Math.round(Number(rate.rate_per_kg) * 100);
 
-            return (
-              <div 
-                key={rate.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 p-6 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                        Statutory MSP
-                      </span>
-                      <h3 className="text-xl font-black text-slate-900 mt-2 capitalize">{rate.crop_name}</h3>
-                    </div>
-                    
-                    {!isEditing && (
-                      <button
-                        onClick={() => handleStartEdit(rate)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title={`Edit MSP rate for ${rate.crop_name}`}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {isEditing ? (
-                    /* Inline Edit Mode */
-                    <div className="space-y-3 my-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Rate per kg (₹)</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          value={editRate}
-                          onChange={(e) => setEditRate(e.target.value)}
-                          className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
-                          autoFocus
-                        />
-                        <span className="text-[11px] text-slate-400 mt-0.5 block">
-                          = ₹{(parseFloat(editRate || '0') * 100).toLocaleString()} / quintal
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Effective Date</label>
-                        <input
-                          type="date"
-                          value={editDate}
-                          onChange={(e) => setEditDate(e.target.value)}
-                          className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                      </div>
-
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          onClick={() => handleSaveEdit(rate.id)}
-                          disabled={saving}
-                          className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          {saving ? 'Saving...' : 'Update'}
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Normal Display Mode */
-                    <div className="my-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black text-slate-900">
-                          ₹{ratePerQuintal.toLocaleString()}
-                        </span>
-                        <span className="text-xs font-semibold text-slate-400">/ quintal</span>
-                      </div>
-                      <p className="text-xs font-bold text-emerald-600 mt-1">
-                        ₹{Number(rate.rate_per_kg).toFixed(2)} per kg
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    Effective: {rate.effective_date ? new Date(rate.effective_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Immediate'}
-                  </span>
-                  <span className="text-[11px]">
-                    Updated: {new Date(rate.updated_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                  return (
+                    <tr key={rate.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3 px-6 align-middle">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900 capitalize text-sm">{rate.crop_name}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mt-0.5">Statutory MSP</span>
+                        </div>
+                      </td>
+                      
+                      {isEditing ? (
+                        <td colSpan={4} className="py-3 px-6 bg-slate-50">
+                          <div className="flex items-center gap-4 max-w-lg">
+                            <div className="flex-1">
+                              <label className="sr-only">Rate per kg</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">₹</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0.01"
+                                  value={editRate}
+                                  onChange={(e) => setEditRate(e.target.value)}
+                                  className="w-full pl-7 pr-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold bg-white"
+                                  placeholder="Rate/kg"
+                                  autoFocus
+                                />
+                              </div>
+                              <span className="text-[10px] font-semibold text-slate-500 mt-1 block">
+                                = ₹{(parseFloat(editRate || '0') * 100).toLocaleString()} / quintal
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <label className="sr-only">Effective Date</label>
+                              <input
+                                type="date"
+                                value={editDate}
+                                onChange={(e) => setEditDate(e.target.value)}
+                                className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      ) : (
+                        <>
+                          <td className="py-3 px-6 align-middle">
+                            <span className="text-sm font-black text-slate-900">₹{ratePerQuintal.toLocaleString()}</span>
+                          </td>
+                          <td className="py-3 px-6 align-middle">
+                            <span className="text-sm font-bold text-emerald-700">₹{Number(rate.rate_per_kg).toFixed(2)}</span>
+                          </td>
+                          <td className="py-3 px-6 align-middle">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              {rate.effective_date ? new Date(rate.effective_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Immediate'}
+                            </div>
+                          </td>
+                          <td className="py-3 px-6 align-middle text-xs font-medium text-slate-400">
+                            {new Date(rate.updated_at).toLocaleDateString()}
+                          </td>
+                        </>
+                      )}
+                      
+                      <td className="py-3 px-6 align-middle text-right">
+                        {isEditing ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleSaveEdit(rate.id)}
+                              disabled={saving}
+                              className="p-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition-colors shadow-sm"
+                              title="Save Changes"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors"
+                              title="Cancel"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleStartEdit(rate)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors inline-flex"
+                            title={`Edit MSP rate for ${rate.crop_name}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

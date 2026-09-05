@@ -228,13 +228,93 @@ const FarmerDashboard: React.FC = () => {
     <div className="space-y-6 relative z-0">
       <DashboardBackground variant="farmer" />
       {/* Hero Welcome Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-8 shadow-xl shadow-emerald-950/15 relative overflow-hidden">
-        <div className="absolute right-0 bottom-0 opacity-10 translate-x-12 translate-y-12">
-          <Sprout className="w-80 h-80" />
+      <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-8 shadow-xl shadow-emerald-950/15 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        {/* Minimalist Panoramic Indian Rural Farm & Harvest SVG */}
+        <div className="absolute right-0 top-0 bottom-0 w-[58%] md:w-[65%] lg:w-[70%] max-w-[850px] pointer-events-none hidden md:block overflow-hidden">
+          <svg viewBox="0 0 750 220" fill="none" preserveAspectRatio="xMaxYMid meet" className="w-full h-full">
+            {/* Dawn Sun over Rural Horizon */}
+            <circle cx="610" cy="80" r="46" fill="#FBBF24" fillOpacity="0.22" />
+            <circle cx="610" cy="80" r="28" fill="#FDE047" fillOpacity="0.28" />
+            {/* Soft Sun Rays */}
+            <line x1="610" y1="24" x2="610" y2="10" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.35" strokeLinecap="round" />
+            <line x1="568" y1="42" x2="556" y2="30" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="652" y1="42" x2="664" y2="30" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="548" y1="80" x2="534" y2="80" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+            <line x1="672" y1="80" x2="686" y2="80" stroke="#FBBF24" strokeWidth="2" strokeOpacity="0.3" strokeLinecap="round" />
+
+            {/* Morning Birds in flight */}
+            <path d="M230 42 Q240 34 250 42 Q260 34 270 42" stroke="white" strokeWidth="1.5" strokeOpacity="0.4" fill="none" />
+            <path d="M285 32 Q293 26 301 32 Q309 26 317 32" stroke="white" strokeWidth="1.2" strokeOpacity="0.35" fill="none" />
+            <path d="M360 48 Q370 40 380 48 Q390 40 400 48" stroke="white" strokeWidth="1.3" strokeOpacity="0.3" fill="none" />
+
+            {/* Rolling Terraced Paddy Fields */}
+            <path d="M0 182 Q180 142 360 168 Q540 138 750 162 L750 220 L0 220 Z" fill="#34D399" fillOpacity="0.09" />
+            <path d="M0 196 Q200 160 420 185 Q620 152 750 174 L750 220 L0 220 Z" fill="white" fillOpacity="0.06" />
+            
+            {/* Field Furrow Contour Lines */}
+            <path d="M30 208 Q240 172 480 198 Q640 172 750 192" stroke="white" strokeWidth="1" strokeOpacity="0.2" fill="none" />
+            <path d="M70 216 Q300 188 540 208 Q680 188 750 202" stroke="#FBBF24" strokeWidth="1" strokeOpacity="0.22" fill="none" />
+
+            {/* Indian Rural Village Farmstead (Cottage & Banyan Tree Canopy) */}
+            <g transform="translate(540, 0)">
+              {/* Spreading Tree Canopy */}
+              <path d="M85 180 Q90 145 95 128 Q78 112 84 92 Q105 76 128 86 Q150 72 165 92 Q176 112 160 132 Q166 148 135 154 Q105 154 100 180 Z" fill="#34D399" fillOpacity="0.35" stroke="white" strokeWidth="1.2" strokeOpacity="0.5" />
+              {/* Tree Trunk */}
+              <path d="M96 180 L102 142 L112 142 L118 180 Z" fill="#064E3B" fillOpacity="0.7" stroke="white" strokeWidth="0.8" strokeOpacity="0.4" />
+
+              {/* Thatched Indian Kisan Cottage */}
+              <path d="M12 138 L48 108 L84 138 Z" fill="#FBBF24" fillOpacity="0.45" stroke="white" strokeWidth="1.3" strokeOpacity="0.65" />
+              <rect x="20" y="138" width="56" height="42" fill="white" fillOpacity="0.18" stroke="white" strokeWidth="1.2" strokeOpacity="0.45" />
+              {/* Cottage Door & Window */}
+              <rect x="40" y="150" width="16" height="30" rx="2" fill="#064E3B" fillOpacity="0.75" stroke="white" strokeWidth="1" strokeOpacity="0.5" />
+              <rect x="25" y="146" width="10" height="10" rx="1.5" fill="#FDE047" fillOpacity="0.4" stroke="white" strokeWidth="0.8" strokeOpacity="0.5" />
+
+              {/* Stacked Hayrick / Straw Sheaf */}
+              <path d="M-10 180 Q-2 155 8 180 Z" fill="#FBBF24" fillOpacity="0.5" stroke="white" strokeWidth="1" strokeOpacity="0.5" />
+            </g>
+
+            {/* Graceful Wheat & Paddy Stalks Extending Lengthy to the Left */}
+            <g>
+              {/* Leftmost Wheat Stalk (Reaching toward the text: x=25 to 105) */}
+              <path d="M25 218 Q50 146 88 74" stroke="#FBBF24" strokeWidth="2.2" strokeLinecap="round" strokeOpacity="0.85" />
+              <ellipse cx="86" cy="78" rx="4.5" ry="8" transform="rotate(25 86 78)" fill="#FDE047" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="80" cy="90" rx="4.5" ry="8" transform="rotate(-15 80 90)" fill="#FBBF24" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="76" cy="102" rx="4.5" ry="8" transform="rotate(22 76 102)" fill="#F59E0B" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="70" cy="114" rx="4.5" ry="8" transform="rotate(-18 70 114)" fill="#FBBF24" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              <ellipse cx="66" cy="126" rx="4.5" ry="8" transform="rotate(20 66 126)" fill="#F59E0B" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              {/* Awn Whiskers */}
+              <line x1="86" y1="74" x2="105" y2="42" stroke="#FDE047" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+              <line x1="83" y1="78" x2="108" y2="52" stroke="#FDE047" strokeWidth="1.2" strokeOpacity="0.75" strokeLinecap="round" />
+
+              {/* Tall Central Wheat Stalk (x=95 to 185) */}
+              <path d="M100 220 Q128 128 158 50" stroke="#FBBF24" strokeWidth="2.4" strokeLinecap="round" strokeOpacity="0.9" />
+              <ellipse cx="156" cy="54" rx="4.5" ry="8.5" transform="rotate(22 156 54)" fill="#FDE047" fillOpacity="0.95" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="150" cy="67" rx="4.5" ry="8.5" transform="rotate(-18 150 67)" fill="#FBBF24" fillOpacity="0.95" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="145" cy="80" rx="4.5" ry="8.5" transform="rotate(20 145 80)" fill="#F59E0B" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="139" cy="93" rx="4.5" ry="8.5" transform="rotate(-15 139 93)" fill="#FBBF24" fillOpacity="0.9" stroke="white" strokeWidth="0.5" strokeOpacity="0.7" />
+              <ellipse cx="134" cy="106" rx="4.5" ry="8.5" transform="rotate(20 134 106)" fill="#F59E0B" fillOpacity="0.85" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+              {/* Whiskers */}
+              <line x1="156" y1="48" x2="176" y2="18" stroke="#FDE047" strokeWidth="1.3" strokeOpacity="0.8" strokeLinecap="round" />
+              <line x1="153" y1="54" x2="182" y2="30" stroke="#FDE047" strokeWidth="1.3" strokeOpacity="0.8" strokeLinecap="round" />
+
+              {/* Drooping Paddy (Dhan) Panicle (x=180 to 290) */}
+              <path d="M190 220 Q230 122 270 86 Q295 96 282 136" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.85" />
+              <circle cx="272" cy="90" r="3.8" fill="#34D399" fillOpacity="0.9" />
+              <circle cx="280" cy="98" r="3.8" fill="#FBBF24" fillOpacity="0.9" />
+              <circle cx="286" cy="110" r="3.8" fill="#FBBF24" fillOpacity="0.9" />
+              <circle cx="284" cy="122" r="3.8" fill="#34D399" fillOpacity="0.9" />
+              <circle cx="279" cy="132" r="3.5" fill="#FBBF24" fillOpacity="0.85" />
+
+              {/* Sprouting Young Leaf Shoot (x=290 to 360) */}
+              <path d="M300 220 Q315 170 345 155 Q325 185 305 220 Z" fill="#34D399" fillOpacity="0.6" stroke="white" strokeWidth="0.8" strokeOpacity="0.5" />
+              <path d="M305 195 Q330 180 348 190 Q325 205 305 220 Z" fill="#FBBF24" fillOpacity="0.55" stroke="white" strokeWidth="0.8" strokeOpacity="0.5" />
+            </g>
+          </svg>
         </div>
-        <div className="relative z-10">
+
+        <div className="relative z-10 max-w-xl">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{t('dashboard.namaste', { name: farmerName })}</h1>
-          <p className="mt-2 text-emerald-100/90 text-base sm:text-lg max-w-2xl">
+          <p className="mt-2 text-emerald-100/90 text-base sm:text-lg max-w-lg leading-relaxed">
             {t('dashboard.welcome_msg')}
           </p>
         </div>
