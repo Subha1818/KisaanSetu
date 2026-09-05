@@ -1,14 +1,19 @@
 import React from 'react';
 
 interface DashboardBackgroundProps {
-  variant: 'centre' | 'farmer';
+  variant: 'centre' | 'farmer' | 'admin';
 }
 
 export const DashboardBackground: React.FC<DashboardBackgroundProps> = ({ variant }) => {
   return (
     <div className="hidden md:block fixed inset-0 pointer-events-none z-[-1] overflow-hidden bg-slate-50">
       {/* Decorative colorful glow blobs */}
-      {variant === 'centre' ? (
+      {variant === 'admin' ? (
+        <>
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-slate-300/40 via-indigo-100/25 to-blue-50/10 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-gradient-to-tl from-indigo-200/25 via-slate-200/30 to-amber-100/20 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3" />
+        </>
+      ) : variant === 'centre' ? (
         <>
           <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 to-blue-100/10 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-gradient-to-tl from-blue-200/30 to-indigo-100/10 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3" />
@@ -21,7 +26,65 @@ export const DashboardBackground: React.FC<DashboardBackgroundProps> = ({ varian
       )}
 
       {/* Margin Illustrations (Full Color) */}
-      {variant === 'centre' ? (
+      {variant === 'admin' ? (
+        <>
+          {/* Left illustration: Official Civic Colonnade & Ministry Seal */}
+          <svg className="absolute top-28 -left-12 w-[420px] h-[420px] opacity-45 mix-blend-multiply" viewBox="0 0 400 400" fill="none">
+            {/* Concentric official seal rings */}
+            <circle cx="150" cy="250" r="140" stroke="#818CF8" strokeWidth="2.5" strokeDasharray="8 6" opacity="0.4" />
+            <circle cx="150" cy="250" r="120" stroke="#6366F1" strokeWidth="1.5" opacity="0.3" />
+            <circle cx="150" cy="250" r="105" fill="#EEF2FF" opacity="0.4" />
+            
+            {/* Classical Pediment & Columns (Government Building) */}
+            <path d="M 60 210 L 150 155 L 240 210 Z" fill="#94A3B8" />
+            <path d="M 50 210 L 250 210 L 250 222 L 50 222 Z" fill="#CBD5E1" />
+            <circle cx="150" cy="188" r="9" fill="#F59E0B" opacity="0.6" />
+            
+            {/* 4 Stately Columns */}
+            <rect x="75" y="226" width="18" height="90" rx="3" fill="#CBD5E1" />
+            <rect x="115" y="226" width="18" height="90" rx="3" fill="#E2E8F0" />
+            <rect x="165" y="226" width="18" height="90" rx="3" fill="#E2E8F0" />
+            <rect x="205" y="226" width="18" height="90" rx="3" fill="#CBD5E1" />
+            
+            {/* Plinth Steps */}
+            <rect x="45" y="320" width="210" height="12" rx="2" fill="#94A3B8" />
+            <rect x="35" y="334" width="230" height="15" rx="3" fill="#64748B" />
+          </svg>
+
+          {/* Right illustration: Balance of Weights & Administrative Registry Ledger */}
+          <svg className="absolute bottom-8 -right-16 w-[480px] h-[480px] opacity-45 mix-blend-multiply" viewBox="0 0 500 500" fill="none">
+            {/* Balance scales of fair procurement */}
+            <circle cx="280" cy="185" r="9" fill="#F59E0B" opacity="0.8" />
+            <rect x="276" y="194" width="8" height="160" rx="3" fill="#64748B" />
+            <line x1="200" y1="215" x2="360" y2="215" stroke="#475569" strokeWidth="6" strokeLinecap="round" />
+            
+            {/* Left scale pan */}
+            <line x1="210" y1="215" x2="190" y2="265" stroke="#94A3B8" strokeWidth="2" />
+            <line x1="210" y1="215" x2="230" y2="265" stroke="#94A3B8" strokeWidth="2" />
+            <path d="M 180 265 Q 210 285 240 265 Z" fill="#818CF8" opacity="0.65" />
+            
+            {/* Right scale pan */}
+            <line x1="350" y1="215" x2="330" y2="265" stroke="#94A3B8" strokeWidth="2" />
+            <line x1="350" y1="215" x2="370" y2="265" stroke="#94A3B8" strokeWidth="2" />
+            <path d="M 320 265 Q 350 285 380 265 Z" fill="#6366F1" opacity="0.65" />
+            
+            {/* Base pedestal */}
+            <path d="M 250 354 L 310 354 L 325 372 L 235 372 Z" fill="#475569" />
+
+            {/* Official Administrative Ledger Book */}
+            <rect x="330" y="300" width="130" height="150" rx="10" fill="#F1F5F9" stroke="#94A3B8" strokeWidth="2.5" />
+            <line x1="350" y1="330" x2="435" y2="330" stroke="#CBD5E1" strokeWidth="4" strokeLinecap="round" />
+            <line x1="350" y1="350" x2="415" y2="350" stroke="#CBD5E1" strokeWidth="4" strokeLinecap="round" />
+            <line x1="350" y1="370" x2="430" y2="370" stroke="#CBD5E1" strokeWidth="4" strokeLinecap="round" />
+            <line x1="350" y1="390" x2="400" y2="390" stroke="#CBD5E1" strokeWidth="4" strokeLinecap="round" />
+            <line x1="350" y1="410" x2="425" y2="410" stroke="#CBD5E1" strokeWidth="4" strokeLinecap="round" />
+            
+            {/* Official seal & ribbon stamp on registry */}
+            <circle cx="425" cy="415" r="16" fill="#F59E0B" opacity="0.8" />
+            <path d="M 420 427 L 415 448 L 425 442 L 430 448 L 430 427 Z" fill="#D97706" opacity="0.8" />
+          </svg>
+        </>
+      ) : variant === 'centre' ? (
         <>
           {/* Left illustration: Abstract stacked grain silos or fields */}
           <svg className="absolute top-32 -left-16 w-96 h-96 opacity-60 mix-blend-multiply" viewBox="0 0 400 400" fill="none">

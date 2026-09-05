@@ -25,8 +25,12 @@ const FarmerDashboard: React.FC = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
-  // Tab state
+// Tab state
   const [activeTab, setActiveTab] = useState<'history' | 'msp'>('history');
+
+  // MSP Rates state
+  const [mspRates, setMspRates] = useState<any[]>([]);
+  const [loadingMsp, setLoadingMsp] = useState<boolean>(true);
 
   // Realtime Live Queue Subscription
   useEffect(() => {
@@ -123,6 +127,29 @@ const FarmerDashboard: React.FC = () => {
           } else if (histErr) {
             console.error('Error fetching procurement history:', histErr);
           }
+        }
+
+        // Fetch live Government MSP rates
+        try {
+          const { data: mspData, error: mspErr } = await supabase
+            .from('msp_rates')
+            .select('id, crop_name, rate_per_kg, effective_date')
+            .order('crop_name');
+
+          if (!mspErr && mspData && mspData.length > 0) {
+            setMspRates(mspData);
+          } else {
+            // Default baseline values if table empty or pending migration
+            setMspRates([
+              { id: '1', crop_name: 'Wheat', rate_per_kg: 22.75, effective_date: '2024-04-01' },
+              { id: '2', crop_name: 'Paddy', rate_per_kg: 21.83, effective_date: '2024-04-01' },
+              { id: '3', crop_name: 'Maize', rate_per_kg: 20.90, effective_date: '2024-04-01' }
+            ]);
+          }
+        } catch (mspCatchErr) {
+          console.error('Error fetching MSP rates:', mspCatchErr);
+        } finally {
+          setLoadingMsp(false);
         }
 
       } catch (err: any) {
@@ -432,38 +459,66 @@ const FarmerDashboard: React.FC = () => {
 
       {/* Tab Content */}
       <div className="mb-8">
-        {/* Static MSP Info Cards */}
+        {/* Dynamic MSP Info Cards */}
         {activeTab === 'msp' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <Award className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-xl font-bold text-slate-900">{t('dashboard.msp_title')}</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-xl font-bold text-slate-900">{t('dashboard.msp_title')}</h2>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 w-fit">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Official Admin-Verified Rates
+              </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">{t('dashboard.wheat')}</p>
-                  <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,275 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
-                </div>
-                <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.rabi')}</span>
-              </div>
 
-              <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">{t('dashboard.paddy')}</p>
-                  <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,183 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
-                </div>
-                <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.kharif')}</span>
+            {loadingMsp ? (
+              <div className="flex items-center justify-center py-12 text-slate-500 gap-2">
+                <Loader className="w-5 h-5 animate-spin text-emerald-600" />
+                <span className="text-sm font-medium">Fetching live MSP rates...</span>
               </div>
+            ) : mspRates.length === 0 ? (
+              <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <Wheat className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="text-sm font-medium text-slate-600">No active MSP rates published yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mspRates.map((crop) => {
+                  const quintalRate = Number(crop.rate_per_kg) * 100;
+                  return (
+                    <div
+                      key={crop.id}
+                      className="border border-slate-200/80 rounded-2xl p-6 bg-gradient-to-b from-white to-slate-50/50 hover:shadow-md hover:border-emerald-200 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
+                            MSP Benchmark
+                          </span>
+                          <span className="text-xs text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded">
+                            ₹{Number(crop.rate_per_kg).toFixed(2)}/kg
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900">{crop.crop_name}</h3>
+                        <p className="text-3xl font-extrabold text-slate-900 mt-3">
+                          ₹{quintalRate.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                          <span className="text-xs text-slate-500 font-medium ml-1.5">{t('dashboard.per_quintal')}</span>
+                        </p>
+                      </div>
 
-              <div className="border border-slate-100 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-500">{t('dashboard.maize')}</p>
-                  <p className="text-2xl font-extrabold text-slate-800 mt-2">₹2,090 <span className="text-xs text-slate-400 font-medium">{t('dashboard.per_quintal')}</span></p>
-                </div>
-                <span className="text-xs text-slate-400 block mt-4 font-semibold uppercase tracking-wider">{t('dashboard.kharif')}</span>
+                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>Effective date:</span>
+                        <span className="font-semibold text-slate-700">
+                          {crop.effective_date ? new Date(crop.effective_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Immediate'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
         )}
 

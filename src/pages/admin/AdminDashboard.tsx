@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Users, Building, Activity, Package, Loader, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, Users, Building, Clock, Package, Loader, ArrowRight, CheckCircle2, XCircle, FileSpreadsheet, Smartphone, History, Coins } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import UserDirectory from './UserDirectory';
+import ProcurementLedger from './ProcurementLedger';
+import SmsDeliveryMonitor from './SmsDeliveryMonitor';
+import ActivityLog from './ActivityLog';
+import MspRatesManager from './MspRatesManager';
+import { DashboardBackground } from '../../components/DashboardBackground';
 
 interface CentreStat {
   centre_id: string;
@@ -20,8 +26,16 @@ interface PendingCentre {
   staff: any;
 }
 
+interface RoleCounts {
+  total: number;
+  farmers: number;
+  staff: number;
+  admins: number;
+}
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'depots' | 'users' | 'ledger' | 'sms' | 'activity' | 'msp'>('depots');
   const [centres, setCentres] = useState<CentreStat[]>([]);
   const [pendingCentres, setPendingCentres] = useState<PendingCentre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,23 +43,50 @@ const AdminDashboard: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [session, setSession] = useState<any>(null);
 
+  // Live stat card states
+  const [activeCentresCount, setActiveCentresCount] = useState<number>(0);
+  const [totalApprovedCount, setTotalApprovedCount] = useState<number>(0);
+  const [roleCounts, setRoleCounts] = useState<RoleCounts>({ total: 0, farmers: 0, staff: 0, admins: 0 });
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+
   const fetchDashboardData = async () => {
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
 
-      // Fetch active centres stats
-      const { data: activeData, error: activeErr } = await supabase
+      // 1. Active Centres count: approval_status='approved' AND status='open'
+      const activeCentresPromise = supabase
+        .from('procurement_centres')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'approved')
+        .eq('status', 'open');
+
+      // Total approved centres for context
+      const totalApprovedPromise = supabase
+        .from('procurement_centres')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'approved');
+
+      // 2. Users count broken down by role
+      const usersPromise = supabase
+        .from('users')
+        .select('role');
+
+      // 3. Pending approvals count: approval_status='pending'
+      const pendingCountPromise = supabase
+        .from('procurement_centres')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'pending');
+
+      // 4. Approved centres list for bottom table
+      const centreListPromise = supabase
         .from('admin_centre_list_stats')
         .select('*')
         .eq('approval_status', 'approved')
         .order('centre_name');
-      
-      if (activeErr) throw activeErr;
-      setCentres(activeData || []);
 
-      // Fetch pending requests
-      const { data: pendingData, error: pendingErr } = await supabase
+      // 5. Pending centres full details for pending approval cards
+      const pendingListPromise = supabase
         .from('procurement_centres')
         .select(`
           id,
@@ -65,8 +106,64 @@ const AdminDashboard: React.FC = () => {
         .eq('approval_status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (pendingErr) throw pendingErr;
-      setPendingCentres(pendingData || []);
+      const [
+        activeRes,
+        totalApprovedRes,
+        usersRes,
+        pendingCountRes,
+        centreListRes,
+        pendingListRes
+      ] = await Promise.all([
+        activeCentresPromise,
+        totalApprovedPromise,
+        usersPromise,
+        pendingCountPromise,
+        centreListPromise,
+        pendingListPromise
+      ]);
+
+      if (activeRes.error) {
+        console.error('Error fetching active centres count:', activeRes.error);
+      } else {
+        setActiveCentresCount(activeRes.count || 0);
+      }
+
+      if (totalApprovedRes.error) {
+        console.error('Error fetching total approved count:', totalApprovedRes.error);
+      } else {
+        setTotalApprovedCount(totalApprovedRes.count || 0);
+      }
+
+      if (usersRes.error) {
+        console.error('Error fetching users:', usersRes.error);
+      } else if (usersRes.data) {
+        let farmers = 0;
+        let staff = 0;
+        let admins = 0;
+        for (const u of usersRes.data) {
+          if (u.role === 'farmer') farmers++;
+          else if (u.role === 'staff') staff++;
+          else if (u.role === 'admin') admins++;
+        }
+        setRoleCounts({
+          total: usersRes.data.length,
+          farmers,
+          staff,
+          admins
+        });
+      }
+
+      if (pendingCountRes.error) {
+        console.error('Error fetching pending approvals count:', pendingCountRes.error);
+      } else {
+        setPendingApprovalsCount(pendingCountRes.count || 0);
+      }
+
+      if (centreListRes.error) throw centreListRes.error;
+      setCentres(centreListRes.data || []);
+
+      if (pendingListRes.error) throw pendingListRes.error;
+      setPendingCentres(pendingListRes.data || []);
 
     } catch (err) {
       console.error('Error fetching admin stats:', err);
@@ -111,76 +208,203 @@ const AdminDashboard: React.FC = () => {
   };
   return (
     <div className="space-y-6">
+      <DashboardBackground variant="admin" />
+
       {/* Hero Header */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-8 shadow-xl">
-        <h1 className="text-3xl font-extrabold tracking-tight">Admin Panel</h1>
-        <p className="mt-2 text-slate-300 text-lg max-w-2xl">
-          Global administrator dashboard. Configure crop parameters, authorize regional procurement depots, override schedules, and view system logs.
-        </p>
-      </div>
-
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Active Centers</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-2">12 Active</h3>
-            </div>
-            <span className="p-3 bg-slate-100 text-slate-700 rounded-xl">
-              <Building className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl p-8 shadow-xl shadow-slate-950/15 border border-slate-700/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              National Procurement Portal
             </span>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <span className="text-xs text-emerald-600 font-semibold">100% Operational</span>
-          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Admin Executive Panel</h1>
+          <p className="mt-1 text-slate-300 text-sm max-w-2xl">
+            Centralized oversight authority. Regulate regional depots, monitor live transactions, inspect delivery gateways, and govern MSP benchmarks.
+          </p>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Registered</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-2">1,482 Users</h3>
-            </div>
-            <span className="p-3 bg-slate-100 text-slate-700 rounded-xl">
-              <Users className="w-6 h-6" />
-            </span>
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <span className="text-xs text-slate-500">Farmers, Officers, Admins</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Global System Status</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-2">Normal</h3>
-            </div>
-            <span className="p-3 bg-slate-100 text-slate-700 rounded-xl">
-              <Activity className="w-6 h-6" />
-            </span>
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <span className="text-xs text-slate-500">Latency: 48ms</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-slate-500">System Role</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-2">Superuser</h3>
-            </div>
-            <span className="p-3 bg-slate-100 text-slate-700 rounded-xl">
-              <ShieldCheck className="w-6 h-6" />
-            </span>
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <span className="text-xs text-slate-500">Role: Root Administrator</span>
+        <div className="flex items-center gap-3">
+          <div className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-xs font-semibold text-slate-200">
+            Role: <strong className="text-white font-bold">Administrator</strong>
           </div>
         </div>
       </div>
+
+      {/* Navigation Tabs - Restyled matching Centre Dashboard pattern */}
+      <div className="flex gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto whitespace-nowrap">
+        <button
+          onClick={() => setActiveTab('depots')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'depots'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Building className="w-4 h-4" />
+          Centre Approvals
+          {pendingApprovalsCount > 0 && (
+            <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+              {pendingApprovalsCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('ledger')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'ledger'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Procurement Ledger
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'users'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          User Directory
+          <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === 'users' ? 'bg-indigo-200/60 text-indigo-900' : 'bg-slate-200/60 text-slate-700'
+          }`}>
+            {roleCounts.total}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('sms')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'sms'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          SMS Monitor
+        </button>
+        <button
+          onClick={() => setActiveTab('activity')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'activity'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <History className="w-4 h-4" />
+          Activity Log
+        </button>
+        <button
+          onClick={() => setActiveTab('msp')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'msp'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Coins className="w-4 h-4" />
+          MSP Rates
+        </button>
+      </div>
+
+      {/* Tab 1: Depot Oversight */}
+      {activeTab === 'depots' && (
+        <>
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Active Centres */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Active Centres</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mt-2">
+                    {loading ? '...' : `${activeCentresCount} Active`}
+                  </h3>
+                </div>
+                <span className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 shadow-xs">
+                  <Building className="w-6 h-6" />
+                </span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <span className="text-xs text-slate-500 font-medium">
+                  {loading ? 'Loading status...' : `${activeCentresCount} of ${totalApprovedCount} approved open`}
+                </span>
+              </div>
+            </div>
+
+            {/* Total Registered */}
+            <div 
+              onClick={() => setActiveTab('users')}
+              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 cursor-pointer group"
+              title="Click to view User Directory"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-slate-500 group-hover:text-indigo-600 transition-colors">Total Registered</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mt-2">
+                    {loading ? '...' : `${roleCounts.total.toLocaleString()} Users`}
+                  </h3>
+                </div>
+                <span className="p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shadow-xs">
+                  <Users className="w-6 h-6" />
+                </span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <span className="text-xs text-slate-500 font-medium">
+                  {loading ? 'Loading breakdown...' : `${roleCounts.farmers} Farmers, ${roleCounts.staff} Staff, ${roleCounts.admins} Admins`}
+                </span>
+              </div>
+            </div>
+
+            {/* Pending Approvals (Amber Accent) */}
+            <div className={`p-6 rounded-2xl border transition-all duration-200 ${
+              pendingApprovalsCount > 0 
+                ? 'bg-amber-50/40 border-amber-300 shadow-sm shadow-amber-900/5 hover:border-amber-400' 
+                : 'bg-white border-slate-200 shadow-sm hover:shadow-md'
+            }`}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Pending Approvals</p>
+                  <h3 className={`text-2xl font-bold mt-2 ${pendingApprovalsCount > 0 ? 'text-amber-900' : 'text-slate-900'}`}>
+                    {loading ? '...' : `${pendingApprovalsCount} Pending`}
+                  </h3>
+                </div>
+                <span className={`p-3 rounded-xl border shadow-xs ${
+                  pendingApprovalsCount > 0 
+                    ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                }`}>
+                  <Clock className="w-6 h-6" />
+                </span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <span className={`text-xs font-semibold ${pendingApprovalsCount > 0 ? 'text-amber-700' : 'text-emerald-600'}`}>
+                  {loading ? 'Checking approvals...' : pendingApprovalsCount > 0 ? `${pendingApprovalsCount} depot${pendingApprovalsCount === 1 ? '' : 's'} awaiting review` : 'All depots reviewed'}
+                </span>
+              </div>
+            </div>
+
+            {/* System Role */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">System Role</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mt-2">Administrator</h3>
+                </div>
+                <span className="p-3 bg-purple-50 text-purple-600 rounded-xl border border-purple-100 shadow-xs">
+                  <ShieldCheck className="w-6 h-6" />
+                </span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <span className="text-xs text-slate-500 font-medium">Role: Administrator</span>
+              </div>
+            </div>
+          </div>
 
       {/* Pending Approvals Section */}
       {pendingCentres.length > 0 && (
@@ -323,6 +547,33 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {/* Tab 2: User Directory */}
+      {activeTab === 'users' && (
+        <UserDirectory />
+      )}
+
+      {/* Tab 3: Procurement Ledger */}
+      {activeTab === 'ledger' && (
+        <ProcurementLedger />
+      )}
+
+      {/* Tab 4: SMS Delivery Monitor */}
+      {activeTab === 'sms' && (
+        <SmsDeliveryMonitor />
+      )}
+
+      {/* Tab 5: Activity Log */}
+      {activeTab === 'activity' && (
+        <ActivityLog />
+      )}
+
+      {/* Tab 6: MSP Rates Management */}
+      {activeTab === 'msp' && (
+        <MspRatesManager />
+      )}
     </div>
   );
 };
