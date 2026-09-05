@@ -164,7 +164,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border border-slate-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-200"
                   >
                     <LogOut className="w-4 h-4" />
-                    Logout
+                    {t('layout.logout')}
                   </button>
                 ) : (
                   authItems.map((item) => {
@@ -221,7 +221,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Mobile Dropdown Menu */}
           {isMobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-slate-100 flex flex-col space-y-2 pb-6">
-              <div className="px-2 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Portals</div>
+              <div className="px-2 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('layout.portals')}</div>
               {navItems.map((item) => {
                 const isActive = location.pathname.startsWith(item.path);
                 const Icon = item.icon;
@@ -240,7 +240,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 );
               })}
 
-              <div className="px-2 pt-4 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 mt-2">Account</div>
+              <div className="px-2 pt-4 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 mt-2">{t('layout.account')}</div>
               {session ? (
                 <button
                   onClick={() => {
@@ -250,7 +250,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-red-600 hover:bg-red-50"
                 >
                   <LogOut className="w-5 h-5" />
-                  Logout
+                  {t('layout.logout')}
                 </button>
               ) : (
                 authItems.map((item) => {
@@ -291,22 +291,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
                 <AlertTriangle className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Confirm Logout</h3>
-              <p className="text-slate-500 text-center text-sm mb-6">Are you sure you want to log out of your account?</p>
+              <h3 className="text-xl font-bold text-slate-900 text-center mb-2">{t('layout.confirm_logout')}</h3>
+              <p className="text-slate-500 text-center text-sm mb-6">{t('layout.logout_confirm_msg')}</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setIsLogoutModalOpen(false)}
                   disabled={isLoggingOut}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
                 >
-                  Cancel
+                  {t('layout.cancel')}
                 </button>
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
                   className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md shadow-red-600/20"
                 >
-                  {isLoggingOut ? 'Logging out...' : 'Confirm Logout'}
+                  {isLoggingOut ? t('layout.logging_out') : t('layout.confirm_logout')}
                 </button>
               </div>
             </div>

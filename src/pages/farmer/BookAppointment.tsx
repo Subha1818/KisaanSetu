@@ -249,10 +249,10 @@ const BookAppointment: React.FC = () => {
 
     const parsedQty = parseFloat(val);
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      setQtyError('Please enter a valid weight quantity.');
+      setQtyError(t('booking.err_valid_weight'));
     } else if (parsedQty > selectedProduct.max_quantity_per_farmer) {
       setQtyError(
-        `Quantity exceeds the center's maximum limit of ${selectedProduct.max_quantity_per_farmer} kg for this crop.`
+        t('booking.err_max_limit', { max: selectedProduct.max_quantity_per_farmer })
       );
     }
   };
@@ -265,7 +265,7 @@ const BookAppointment: React.FC = () => {
 
     const parsedQty = parseFloat(quantity);
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      setQtyError('Enter a valid weight quantity.');
+      setQtyError(t('booking.err_valid_weight'));
       setLoading(false);
       return;
     }
@@ -328,7 +328,7 @@ const BookAppointment: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs uppercase font-extrabold tracking-wider text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 shadow-xs">
-                  {t('booking.step_of', { step })} • In Progress
+                  {t('booking.step_of', { step })} • {t('booking.in_progress')}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1.5 tracking-tight">
@@ -342,10 +342,10 @@ const BookAppointment: React.FC = () => {
             {/* Stepper Step Badges (Location -> Depot -> Details -> Confirm) */}
             <div className="flex items-center gap-1 sm:gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
               {[
-                { num: 1, label: 'Location', icon: MapPin },
-                { num: 2, label: 'Depot', icon: Building },
-                { num: 3, label: 'Details', icon: Calendar },
-                { num: 4, label: 'Confirm', icon: CheckCircle2 }
+                { num: 1, label: t('booking.step_location'), icon: MapPin },
+                { num: 2, label: t('booking.step_depot'), icon: Building },
+                { num: 3, label: t('booking.step_details'), icon: Calendar },
+                { num: 4, label: t('booking.step_confirm'), icon: CheckCircle2 }
               ].map((s, idx) => {
                 const isDone = step > s.num;
                 const isCurrent = step === s.num;
@@ -398,7 +398,7 @@ const BookAppointment: React.FC = () => {
         {loading && step < 4 && (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Loader className="w-8 h-8 animate-spin text-emerald-600" />
-            <p className="text-slate-400 font-semibold text-sm">Fetching live details...</p>
+            <p className="text-slate-400 font-semibold text-sm">{t('booking.fetching_live')}</p>
           </div>
         )}
 
@@ -408,7 +408,7 @@ const BookAppointment: React.FC = () => {
             {/* Search Mode Toggle (Two Distinct Large Cards) */}
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                Choose Discovery Method
+                {t('booking.choose_discovery')}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Option 1: GPS */}
@@ -426,14 +426,14 @@ const BookAppointment: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="font-extrabold text-slate-900 text-sm sm:text-base">Use My Location</p>
+                      <p className="font-extrabold text-slate-900 text-sm sm:text-base">{t('booking.use_gps')}</p>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${searchMode === 'gps' ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
                         }`}>
                         {searchMode === 'gps' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Auto-detect nearest depots instantly with road distance calculation.
+                      {t('booking.use_gps_desc')}
                     </p>
                   </div>
                 </button>
@@ -453,14 +453,14 @@ const BookAppointment: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="font-extrabold text-slate-900 text-sm sm:text-base">Select Manually</p>
+                      <p className="font-extrabold text-slate-900 text-sm sm:text-base">{t('booking.select_manual')}</p>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${searchMode === 'manual' ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
                         }`}>
                         {searchMode === 'manual' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Browse depots through State, District, and Block administrative filters.
+                      {t('booking.select_manual_desc')}
                     </p>
                   </div>
                 </button>
@@ -473,9 +473,9 @@ const BookAppointment: React.FC = () => {
                   <MapPin className="w-7 h-7 sm:w-8 sm:h-8 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-emerald-950">Find Nearest Centres</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-emerald-950">{t('booking.find_nearest_title')}</h3>
                   <p className="text-xs sm:text-sm text-emerald-700 mt-1.5 leading-relaxed">
-                    Allow device location access to instantly find approved procurement centres closest to you.
+                    {t('booking.find_nearest_desc')}
                   </p>
                 </div>
                 {locationError && (
@@ -490,7 +490,7 @@ const BookAppointment: React.FC = () => {
                   className="w-full mt-4 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer text-sm"
                 >
                   {locationLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-                  {locationLoading ? 'Locating Your Farm...' : 'Enable Location & Search'}
+                  {locationLoading ? t('booking.locating') : t('booking.enable_location_btn')}
                 </button>
               </div>
             ) : (
@@ -604,11 +604,11 @@ const BookAppointment: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900">
-                    {searchMode === 'gps' ? 'Nearest Depots to Your Location' : 'Centres in Selected Block'}
+                    {searchMode === 'gps' ? t('booking.nearest_depots_title') : t('booking.block_depots_title')}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {searchMode === 'gps'
-                      ? 'Sorted by computed road proximity to your device GPS coordinates'
+                      ? t('booking.nearest_depots_subtitle')
                       : `Block: ${blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'N/A'}`}
                   </p>
                 </div>
@@ -620,7 +620,7 @@ const BookAppointment: React.FC = () => {
                 }}
                 className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-white hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/80 transition-colors shrink-0 cursor-pointer shadow-xs"
               >
-                {searchMode === 'gps' ? 'Switch to Manual Selection' : 'Switch to GPS Nearby'}
+                {searchMode === 'gps' ? t('booking.switch_to_manual') : t('booking.switch_to_gps')}
               </button>
             </div>
 
@@ -636,12 +636,12 @@ const BookAppointment: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-red-950 font-bold text-lg">
-                        No Procurement Centres Found
+                        {t('booking.no_centres_found')}
                       </h3>
                       <p className="text-red-700/80 text-xs font-medium mt-1 leading-relaxed">
                         {searchMode === 'gps'
-                          ? 'We could not find any active procurement centres with registered coordinates near your device location.'
-                          : `No active procurement centres registered in ${blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'the selected block'}.`
+                          ? t('booking.no_centres_gps_desc')
+                          : t('booking.no_centres', { block: blocksList.find(b => b.block_code === parseInt(selectedBlockCode))?.block_name || 'the selected block' })
                         }
                       </p>
                     </div>
@@ -650,7 +650,7 @@ const BookAppointment: React.FC = () => {
                         onClick={() => setStep(1)}
                         className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
                       >
-                        {searchMode === 'gps' ? 'Try Selecting Manually' : t('booking.mod_filters')}
+                        {searchMode === 'gps' ? t('booking.try_manual') : t('booking.mod_filters')}
                       </button>
                     </div>
                   </div>
@@ -687,7 +687,7 @@ const BookAppointment: React.FC = () => {
                               {dist !== null && (
                                 <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 mt-1.5 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-md w-max shadow-xs">
                                   <MapPin className="w-3 h-3 text-emerald-600" />
-                                  {dist.toFixed(1)} km away
+                                  {t('booking.km_away', { dist: dist.toFixed(1) })}
                                 </span>
                               )}
                             </div>
@@ -698,7 +698,7 @@ const BookAppointment: React.FC = () => {
                                 </div>
                               ) : (
                                 <span className="bg-red-100 text-red-700 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-200">
-                                  Closed
+                                  {t('booking.closed')}
                                 </span>
                               )}
                             </div>
@@ -722,9 +722,9 @@ const BookAppointment: React.FC = () => {
                       <AlertCircle className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Depot Intake Guidelines</p>
+                      <p className="font-bold text-slate-800">{t('booking.depot_guidelines_title')}</p>
                       <p className="text-slate-500 mt-0.5 leading-relaxed">
-                        Depot capacities are capped per day for quality assurance. Choose a centre nearest to your transport route, then choose your harvest crop on the next step.
+                        {t('booking.depot_guidelines_desc')}
                       </p>
                     </div>
                   </div>

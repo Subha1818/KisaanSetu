@@ -326,7 +326,7 @@ const Register: React.FC = () => {
           <div className="w-full max-w-md mx-auto space-y-8">
             <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">
               <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              {t('auth.back_to_home')}
             </Link>
 
             <div>
@@ -352,8 +352,8 @@ const Register: React.FC = () => {
                 <div>
                   {role === 'staff' ? (
                     <>
-                      <p className="font-semibold">Registration submitted!</p>
-                      <p className="mt-0.5 text-emerald-600">Your request to register <strong>{centreName}</strong> is awaiting admin approval. You will be able to log in once approved.</p>
+                      <p className="font-semibold">{t('auth.reg_submitted_title')}</p>
+                      <p className="mt-0.5 text-emerald-600">{t('auth.reg_submitted_staff', { centre: centreName })}</p>
                     </>
                   ) : (
                     <>
@@ -370,10 +370,10 @@ const Register: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">
-                      Verify your mobile number
+                      {t('auth.verify_mobile_title')}
                     </label>
                     <p className="text-sm text-slate-600 mb-4">
-                      Enter the 6-digit code sent to +91XXXXXXX{mobile.slice(-3)}
+                      {t('auth.verify_mobile_desc', { phone: `+91XXXXXXX${mobile.slice(-3)}` })}
                     </p>
                     <input
                       type="text"
@@ -392,7 +392,7 @@ const Register: React.FC = () => {
                       onClick={() => setStage('form')}
                       className="text-slate-500 hover:text-slate-700 font-medium transition-colors"
                     >
-                      &larr; Back to edit details
+                      &larr; {t('auth.back_to_edit')}
                     </button>
                     
                     <button
@@ -401,7 +401,7 @@ const Register: React.FC = () => {
                       disabled={otpCountdown > 0 || loading}
                       className="text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      {otpCountdown > 0 ? `Resend in 0:${otpCountdown.toString().padStart(2, '0')}` : 'Resend Code'}
+                      {otpCountdown > 0 ? t('auth.resend_in', { seconds: otpCountdown.toString().padStart(2, '0') }) : t('auth.resend_code')}
                     </button>
                   </div>
                 </div>
@@ -415,7 +415,7 @@ const Register: React.FC = () => {
                     {loading ? (
                       <Loader className="w-5 h-5 animate-spin text-white" />
                     ) : (
-                      'Verify & Create Account'
+                      t('auth.verify_create_btn')
                     )}
                   </button>
                 </div>
@@ -443,7 +443,7 @@ const Register: React.FC = () => {
                       <Sprout className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900">Farmer</p>
+                      <p className="font-bold text-slate-900">{t('auth.role_farmer')}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{t('auth.farmer_desc')}</p>
                     </div>
                   </button>
@@ -461,7 +461,7 @@ const Register: React.FC = () => {
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900">Centre Staff</p>
+                      <p className="font-bold text-slate-900">{t('auth.role_staff')}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{t('auth.staff_desc')}</p>
                     </div>
                   </button>
@@ -476,8 +476,8 @@ const Register: React.FC = () => {
                       <Shield className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900">Administrator</p>
-                      <p className="text-xs text-slate-500 mt-0.5">Admin accounts are provisioned manually.</p>
+                      <p className="font-bold text-slate-900">{t('auth.role_admin')}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{t('auth.admin_manual_desc')}</p>
                     </div>
                   </button>
                 </div>
@@ -543,11 +543,11 @@ const Register: React.FC = () => {
               {/* Centre Staff Extra Fields */}
               {role === 'staff' && (
                 <div className="space-y-4 pt-4 border-t border-slate-100">
-                  <h3 className="text-sm font-bold text-slate-900">Procurement Centre Details</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{t('auth.centre_details_title')}</h3>
 
                   <div>
                     <label htmlFor="centreName" className="block text-sm font-semibold text-slate-700 mb-1">
-                      Centre Name
+                      {t('auth.centre_name_label')}
                     </label>
                     <input
                       id="centreName"
@@ -562,14 +562,14 @@ const Register: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">State</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">{t('booking.state')}</label>
                     <select
                       value={selectedStateCode}
                       onChange={(e) => setSelectedStateCode(e.target.value)}
                       required
                       className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                     >
-                      <option value="">Select State</option>
+                      <option value="">{t('booking.select_state')}</option>
                       {statesList.map((state) => (
                         <option key={state.state_code} value={state.state_code}>
                           {state.state_name}
@@ -579,7 +579,7 @@ const Register: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">District</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">{t('booking.district')}</label>
                     <select
                       value={selectedDistrictCode}
                       onChange={(e) => setSelectedDistrictCode(e.target.value)}
@@ -587,7 +587,7 @@ const Register: React.FC = () => {
                       disabled={!selectedStateCode}
                       className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-400"
                     >
-                      <option value="">{selectedStateCode ? 'Select District' : 'Select State first'}</option>
+                      <option value="">{t('booking.select_district')}</option>
                       {districtsList.map((district) => (
                         <option key={district.district_code} value={district.district_code}>
                           {district.district_name}
@@ -597,7 +597,7 @@ const Register: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Block</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">{t('booking.block')}</label>
                     <select
                       value={selectedBlockCode}
                       onChange={(e) => setSelectedBlockCode(e.target.value)}
@@ -605,7 +605,7 @@ const Register: React.FC = () => {
                       disabled={!selectedDistrictCode}
                       className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-400"
                     >
-                      <option value="">{selectedDistrictCode ? 'Select Block' : 'Select District first'}</option>
+                      <option value="">{t('booking.select_block')}</option>
                       {blocksList.map((block) => (
                         <option key={block.block_code} value={block.block_code}>
                           {block.block_name}

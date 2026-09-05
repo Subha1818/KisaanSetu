@@ -35,6 +35,7 @@ import ProcurementLedger from './ProcurementLedger';
 import SmsDeliveryMonitor from './SmsDeliveryMonitor';
 import ActivityLog from './ActivityLog';
 import MspRatesManager from './MspRatesManager';
+import AdminCentresMap, { type MapCentre } from '../../components/admin/AdminCentresMap';
 import { DashboardBackground } from '../../components/DashboardBackground';
 
 interface CentreStat {
@@ -93,6 +94,9 @@ const AdminDashboard: React.FC = () => {
   const [sevenDaysTotal, setSevenDaysTotal] = useState<number>(0);
   const [approvalPieData, setApprovalPieData] = useState<ApprovalChartItem[]>([]);
   const [totalCentresCount, setTotalCentresCount] = useState<number>(0);
+
+  // Map centres with coordinates
+  const [mapCentres, setMapCentres] = useState<MapCentre[]>([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -167,6 +171,27 @@ const AdminDashboard: React.FC = () => {
         .gte('created_at', sevenDaysAgo.toISOString())
         .order('created_at', { ascending: true });
 
+      // 8. Map Procurement Centres (Approved centres with GPS coordinates for India Map)
+      const mapCentresPromise = supabase
+        .from('procurement_centres')
+        .select(`
+          id,
+          name,
+          owner_name,
+          status,
+          approval_status,
+          latitude,
+          longitude,
+          daily_capacity,
+          geo_blocks (
+            district_name,
+            block_name,
+            state_name
+          )
+        `)
+        .eq('approval_status', 'approved')
+        .order('name');
+
       const [
         activeRes,
         totalApprovedRes,
@@ -175,7 +200,8 @@ const AdminDashboard: React.FC = () => {
         centreListRes,
         pendingListRes,
         centresStatusRes,
-        recentProcurementsRes
+        recentProcurementsRes,
+        mapCentresRes
       ] = await Promise.all([
         activeCentresPromise,
         totalApprovedPromise,
@@ -184,7 +210,8 @@ const AdminDashboard: React.FC = () => {
         centreListPromise,
         pendingListPromise,
         centresStatusPromise,
-        recentProcurementsPromise
+        recentProcurementsPromise,
+        mapCentresPromise
       ]);
 
       if (activeRes.error) {
@@ -229,6 +256,12 @@ const AdminDashboard: React.FC = () => {
 
       if (pendingListRes.error) throw pendingListRes.error;
       setPendingCentres(pendingListRes.data || []);
+
+      if (mapCentresRes.error) {
+        console.error('Error fetching map centres:', mapCentresRes.error);
+      } else {
+        setMapCentres((mapCentresRes.data as unknown as MapCentre[]) || []);
+      }
 
       // Process Donut Chart data (Centre Approvals Status)
       if (centresStatusRes.data) {
@@ -690,6 +723,9 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Centre Locations India Map View */}
+          <AdminCentresMap centres={mapCentres} loading={loading} />
 
           {/* Charts Row: Procurement Overview & Depot Approval Status */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

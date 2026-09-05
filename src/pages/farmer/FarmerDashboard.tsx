@@ -17,8 +17,19 @@ const FarmerDashboard: React.FC = () => {
   const [procurementHistory, setProcurementHistory] = useState<any[]>([]);
   const [farmerName, setFarmerName] = useState('Farmer');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'booked': return t('dashboard.status_booked');
+      case 'called': return t('dashboard.status_called');
+      case 'in_progress': return t('dashboard.status_in_progress');
+      case 'completed': return t('dashboard.status_completed');
+      case 'cancelled': return t('dashboard.status_cancelled');
+      default: return status;
+    }
+  };
+
   // Modals state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('Personal reasons');
@@ -347,7 +358,7 @@ const FarmerDashboard: React.FC = () => {
                   'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}>
                   <Clock className="w-3.5 h-3.5" />
-                  {activeBooking.status}
+                  {getStatusLabel(activeBooking.status)}
                 </span>
               </div>
             </div>
@@ -455,7 +466,7 @@ const FarmerDashboard: React.FC = () => {
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-sm shadow-md"
               >
                 {downloadingId === 'token' ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Download Pass PDF
+                {t('dashboard.download_pass_pdf')}
               </button>
               
               {isCancellable ? (
@@ -523,7 +534,7 @@ const FarmerDashboard: React.FC = () => {
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
-          Procurement History
+          {t('dashboard.tab_history')}
         </button>
         <button
           onClick={() => setActiveTab('msp')}
@@ -533,7 +544,7 @@ const FarmerDashboard: React.FC = () => {
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
           }`}
         >
-          Government Minimum Support Prices (MSP)
+          {t('dashboard.tab_msp')}
         </button>
       </div>
 
@@ -549,19 +560,19 @@ const FarmerDashboard: React.FC = () => {
               </div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 w-fit">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                Official Admin-Verified Rates
+                {t('dashboard.msp_official_badge')}
               </span>
             </div>
 
             {loadingMsp ? (
               <div className="flex items-center justify-center py-12 text-slate-500 gap-2">
                 <Loader className="w-5 h-5 animate-spin text-emerald-600" />
-                <span className="text-sm font-medium">Fetching live MSP rates...</span>
+                <span className="text-sm font-medium">{t('dashboard.fetching_msp')}</span>
               </div>
             ) : mspRates.length === 0 ? (
               <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 <Wheat className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-slate-600">No active MSP rates published yet.</p>
+                <p className="text-sm font-medium text-slate-600">{t('dashboard.no_msp_rates')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -575,7 +586,7 @@ const FarmerDashboard: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
-                            MSP Benchmark
+                            {t('dashboard.msp_benchmark')}
                           </span>
                           <span className="text-xs text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded">
                             ₹{Number(crop.rate_per_kg).toFixed(2)}/kg
@@ -589,9 +600,9 @@ const FarmerDashboard: React.FC = () => {
                       </div>
 
                       <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                        <span>Effective date:</span>
+                        <span>{t('dashboard.effective_date')}</span>
                         <span className="font-semibold text-slate-700">
-                          {crop.effective_date ? new Date(crop.effective_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Immediate'}
+                          {crop.effective_date ? new Date(crop.effective_date).toLocaleDateString(i18n.language === 'en' ? 'en-IN' : i18n.language, { day: 'numeric', month: 'short', year: 'numeric' }) : t('dashboard.immediate')}
                         </span>
                       </div>
                     </div>
@@ -607,7 +618,7 @@ const FarmerDashboard: React.FC = () => {
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
               <History className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-xl font-bold text-slate-900">Procurement History</h2>
+              <h2 className="text-xl font-bold text-slate-900">{t('dashboard.history_title')}</h2>
             </div>
             {procurementHistory.length > 0 ? (
               <div className="space-y-4">
@@ -617,17 +628,17 @@ const FarmerDashboard: React.FC = () => {
                       <div className="flex items-center gap-3 mb-1">
                         <span className="font-bold text-slate-800 text-lg">{item.bookings.product_name}</span>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
-                          Token {item.bookings.token}
+                          {t('dashboard.history_token', { token: item.bookings.token })}
                         </span>
                       </div>
                       <p className="text-sm text-slate-500 mb-2">
-                        {new Date(item.created_at).toLocaleDateString('en-IN', {
+                        {new Date(item.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-IN' : i18n.language, {
                           day: 'numeric', month: 'short', year: 'numeric'
                         })} • {item.bookings.procurement_centres.name}
                       </p>
                       <div className="flex gap-4 text-sm font-medium">
-                        <span className="text-slate-700">Accepted: {item.quantity_accepted} kg</span>
-                        <span className="text-emerald-700">Amount: ₹{item.total_amount?.toLocaleString('en-IN')}</span>
+                        <span className="text-slate-700">{t('dashboard.history_accepted', { qty: item.quantity_accepted })}</span>
+                        <span className="text-emerald-700">{t('dashboard.history_amount', { amount: item.total_amount?.toLocaleString('en-IN') })}</span>
                       </div>
                     </div>
                     
@@ -638,16 +649,16 @@ const FarmerDashboard: React.FC = () => {
                         'bg-amber-100 text-amber-800'
                       }`}>
                         {item.payments[0]?.status === 'credited' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                        Payment {item.payments[0]?.status || 'pending'}
+                        {t('dashboard.payment_status', { status: getStatusLabel(item.payments[0]?.status || 'pending') })}
                       </span>
                       
                       <button
                         onClick={() => handleDownloadReceipt(item.id)}
                         disabled={downloadingId === item.id}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-xs"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-xs cursor-pointer"
                       >
                         {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        Download Receipt
+                        {t('dashboard.download_receipt')}
                       </button>
                     </div>
                   </div>
@@ -655,7 +666,7 @@ const FarmerDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-slate-500 font-medium">
-                No procurement history found.
+                {t('dashboard.no_history')}
               </div>
             )}
           </div>
