@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  MapPin, Building, Wheat,
-  AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader,
-  Navigation, Layers, Compass, Calendar, Scale, Check
+import { 
+  Building, 
+  Calendar, 
+  CheckCircle2, 
+  MapPin, 
+  Navigation, 
+  Loader,
+  AlertCircle,
+  Clock,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Layers,
+  Compass,
+  Wheat,
+  Scale
 } from 'lucide-react';
+import { calculateArrivalWindow } from '../../utils/arrivalEstimator';
 import { supabase } from '../../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 import { useCascadingGeo } from '../../hooks/useCascadingGeo';
@@ -83,6 +96,9 @@ const BookAppointment: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [qtyError, setQtyError] = useState<string | null>(null);
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [arrivalWindow, setArrivalWindow] = useState<{ earliestTime: string; latestTime: string } | null>(null);
+  const [peopleAheadCount, setPeopleAheadCount] = useState<number>(0);
+  const [centreOpeningTime, setCentreOpeningTime] = useState<string>('');
 
   // Fetch session at mount
   useEffect(() => {
@@ -287,6 +303,44 @@ const BookAppointment: React.FC = () => {
       const result = data as any;
       if (result.success) {
         setGeneratedToken(result.token);
+        
+        // Fetch queue stats for arrival estimation
+        try {
+          const { data: centreData } = await supabase
+            .from('procurement_centres')
+            .select('opening_time')
+            .eq('id', selectedCentre.id)
+            .single();
+            
+          const { data: avgPaceData } = await supabase.rpc('get_centre_avg_processing_time', {
+            p_centre_id: selectedCentre.id
+          });
+          
+          const { count } = await supabase
+            .from('bookings')
+            .select('*', { count: 'exact', head: true })
+            .eq('centre_id', selectedCentre.id)
+            .eq('booking_date_id', selectedDate.id)
+            .in('status', ['booked', 'called', 'in_progress'])
+            .lt('token', result.token);
+
+          const peopleAhead = count || 0;
+          setPeopleAheadCount(peopleAhead);
+
+          if (centreData?.opening_time) {
+            setCentreOpeningTime(centreData.opening_time.substring(0, 5));
+            const window = calculateArrivalWindow(
+              centreData.opening_time,
+              avgPaceData || 10,
+              peopleAhead,
+              selectedDate?.date
+            );
+            setArrivalWindow(window);
+          }
+        } catch (e) {
+          console.error('Failed to calculate arrival window', e);
+        }
+
         setStep(5); // Show token receipt screen
       } else {
         throw new Error('An unexpected transaction error occurred.');
@@ -996,6 +1050,29 @@ const BookAppointment: React.FC = () => {
                 <p><strong>{t('dashboard.weight')}:</strong> {quantity} {t('booking.kg')}</p>
               </div>
             </div>
+
+            {/* Estimated Arrival Window Card */}
+            {arrivalWindow && (
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 text-left shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-amber-900">Estimated Arrival Window</h3>
+                    <p className="text-amber-700/80 text-xs font-medium">Based on {peopleAheadCount} farmers ahead · Centre opens at {centreOpeningTime}</p>
+                  </div>
+                </div>
+                <div className="bg-white/60 rounded-xl p-4 mt-3 border border-amber-100 flex items-center justify-center">
+                  <p className="text-xl font-black text-amber-800 tracking-tight">
+                    ~ {arrivalWindow.earliestTime} <span className="text-amber-400 mx-1">—</span> {arrivalWindow.latestTime}
+                  </p>
+                </div>
+                <p className="text-[10px] text-amber-600/70 text-center mt-3 font-semibold uppercase tracking-wider">
+                  *This is an estimate. Actual queue times may vary.
+                </p>
+              </div>
+            )}
 
             <div className="pt-4">
               <button

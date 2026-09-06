@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Sprout, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History } from 'lucide-react';
+import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
 import { RescheduleModal } from '../../components/farmer/RescheduleModal';
 import { useTranslation } from 'react-i18next';
 import { generateProcurementReceipt, generateTokenPDF } from '../../utils/pdfGenerator';
+import { calculateArrivalWindow } from '../../utils/arrivalEstimator';
 import { QRCodeSVG } from 'qrcode.react';
 import { DashboardBackground } from '../../components/DashboardBackground';
 
@@ -17,6 +18,11 @@ const FarmerDashboard: React.FC = () => {
   const [procurementHistory, setProcurementHistory] = useState<any[]>([]);
   const [farmerName, setFarmerName] = useState('Farmer');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  
+  const [centreOpeningTime, setCentreOpeningTime] = useState<string>('');
+  const [todaysPace, setTodaysPace] = useState<number | null>(null);
+  const [arrivalWindow, setArrivalWindow] = useState<{ earliestTime: string; latestTime: string } | null>(null);
+  
   const { t, i18n } = useTranslation();
   
   const getStatusLabel = (status: string) => {
@@ -139,6 +145,20 @@ const FarmerDashboard: React.FC = () => {
             console.error('Error fetching procurement history:', histErr);
           }
         }
+        
+        // Fetch opening time for the active booking's centre
+        if (bookings && bookings.length > 0) {
+          const centreId = bookings[0].centre_id;
+          const { data: cData } = await supabase
+            .from('procurement_centres')
+            .select('opening_time')
+            .eq('id', centreId)
+            .single();
+            
+          if (cData?.opening_time) {
+            setCentreOpeningTime(cData.opening_time.substring(0, 5));
+          }
+        }
 
         // Fetch live Government MSP rates
         try {
@@ -184,6 +204,38 @@ const FarmerDashboard: React.FC = () => {
   ).length;
 
   const nowServing = queue.find(b => b.status === 'in_progress' || b.status === 'called')?.token || 'None';
+
+  // Compute today's processing pace securely via RPC on queue updates
+  useEffect(() => {
+    if (!activeBooking?.centre_id) return;
+    const fetchPace = async () => {
+      try {
+        const { data } = await supabase.rpc('get_todays_processing_pace', {
+          p_centre_id: activeBooking.centre_id
+        });
+        if (data !== null) {
+          setTodaysPace(data as number);
+        }
+      } catch (e) {
+        console.error('Failed to fetch pace:', e);
+      }
+    };
+    fetchPace();
+  }, [queue, activeBooking?.centre_id]);
+
+  // Calculate arrival window
+  useEffect(() => {
+    if (centreOpeningTime && todaysPace && peopleAhead >= 0) {
+      setArrivalWindow(
+        calculateArrivalWindow(
+          centreOpeningTime,
+          todaysPace,
+          peopleAhead,
+          activeBooking?.booking_dates?.date
+        )
+      );
+    }
+  }, [centreOpeningTime, todaysPace, peopleAhead, activeBooking?.booking_dates?.date]);
 
   // Cancellation logic
   const cancelWindowHours = activeBooking?.procurement_centres?.cancellation_window_hours || 24;
@@ -417,7 +469,7 @@ const FarmerDashboard: React.FC = () => {
                 <Play className="w-4 h-4 text-indigo-600" />
                 {t('dashboard.live_queue')}
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5">
                   <span className="text-xs text-indigo-600 font-extrabold uppercase">{t('dashboard.now_serving')}</span>
                   <p className="text-2xl font-black text-indigo-900 mt-1">{nowServing}</p>
@@ -425,6 +477,20 @@ const FarmerDashboard: React.FC = () => {
                 <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-5">
                   <span className="text-xs text-amber-600 font-extrabold uppercase">{t('dashboard.people_ahead')}</span>
                   <p className="text-2xl font-black text-amber-900 mt-1">{peopleAhead}</p>
+                </div>
+                <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-5 relative overflow-hidden">
+                  <Clock className="w-16 h-16 text-teal-500/10 absolute -right-2 -bottom-2" />
+                  <span className="text-xs text-teal-700 font-extrabold uppercase relative z-10">Estimated Arrival</span>
+                  <p className="text-lg font-black text-teal-900 mt-1 tracking-tight leading-tight relative z-10">
+                    {arrivalWindow ? (
+                      <>
+                        <span className="block">{arrivalWindow.earliestTime} <span className="text-teal-400 mx-0.5">—</span></span>
+                        <span className="block">{arrivalWindow.latestTime}</span>
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
@@ -455,7 +521,10 @@ const FarmerDashboard: React.FC = () => {
                 onClick={async () => {
                   try {
                     setDownloadingId('token');
-                    await generateTokenPDF(activeBooking.id);
+                    const timeWindow = arrivalWindow 
+                      ? `${arrivalWindow.earliestTime} — ${arrivalWindow.latestTime}` 
+                      : undefined;
+                    await generateTokenPDF(activeBooking.id, timeWindow);
                   } catch (err) {
                     setError('Failed to download token PDF.');
                   } finally {

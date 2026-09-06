@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { supabase } from '../lib/supabaseClient';
 import QRCode from 'qrcode';
+import { calculateArrivalWindow } from './arrivalEstimator';
 
 export const generateProcurementReceipt = async (procurementId: string) => {
   try {
@@ -172,7 +173,7 @@ export const generateProcurementReceipt = async (procurementId: string) => {
   }
 };
 
-export const generateTokenPDF = async (bookingId: string) => {
+export const generateTokenPDF = async (bookingId: string, estimatedTimeWindow?: string) => {
   try {
     const { data: booking, error } = await supabase
       .from('bookings')
@@ -182,6 +183,8 @@ export const generateTokenPDF = async (bookingId: string) => {
         users ( name, mobile_number ),
         procurement_centres ( 
           name, 
+          opening_time,
+          avg_minutes_per_farmer,
           geo_blocks (
             district_name,
             block_name,
@@ -199,6 +202,37 @@ export const generateTokenPDF = async (bookingId: string) => {
     const centre = booking.procurement_centres as any;
     const farmer = booking.users as any;
     const geo = centre.geo_blocks || {};
+
+    // Calculate arrival window if not directly supplied
+    let timeWindowStr = estimatedTimeWindow;
+    if (!timeWindowStr && booking) {
+      try {
+        const { count } = await supabase
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .eq('centre_id', booking.centre_id)
+          .eq('booking_date_id', booking.booking_date_id)
+          .in('status', ['booked', 'called', 'in_progress'])
+          .lt('token', booking.token);
+
+        const { data: avgPace } = await supabase.rpc('get_centre_avg_processing_time', {
+          p_centre_id: booking.centre_id
+        });
+
+        const window = calculateArrivalWindow(
+          centre?.opening_time || '08:00:00',
+          avgPace || centre?.avg_minutes_per_farmer || 10,
+          count || 0,
+          booking.booking_dates?.date
+        );
+
+        if (window) {
+          timeWindowStr = `${window.earliestTime} — ${window.latestTime}`;
+        }
+      } catch (calcErr) {
+        console.warn('Could not auto-calculate arrival window for PDF:', calcErr);
+      }
+    }
 
     const doc = new jsPDF();
     const margin = 20;
@@ -246,13 +280,26 @@ export const generateTokenPDF = async (bookingId: string) => {
     doc.text(`Token Number: ${booking.token}`, margin, yPos);
     doc.text(`Scheduled Date: ${dateStr}`, pageWidth / 2, yPos);
     yPos += 8;
+
     doc.text(`Farmer Name: ${farmer.name}`, margin, yPos);
-    doc.text(`Mobile: ${farmer.mobile_number}`, pageWidth / 2, yPos);
+    if (timeWindowStr) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(5, 150, 105); // emerald-600
+      doc.text(`Estimated Arrival: ${timeWindowStr}`, pageWidth / 2, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(15, 23, 42);
+    } else {
+      doc.text(`Mobile: ${farmer.mobile_number}`, pageWidth / 2, yPos);
+    }
     yPos += 8;
+
     doc.text(`Product: ${booking.product_name}`, margin, yPos);
     doc.text(`Estimated Quantity: ${booking.quantity} kg`, pageWidth / 2, yPos);
+    yPos += 8;
+
+    doc.text(`Mobile: ${farmer.mobile_number}`, margin, yPos);
     
-    yPos += 20;
+    yPos += 16;
 
     // Generate and add QR Code
     try {
@@ -296,7 +343,9 @@ export const generateTokenPDF = async (bookingId: string) => {
       '1. Present this token (digital or printed) along with your physical ID card at the centre gate.',
       '2. Ensure your crop meets quality standards before joining the queue.',
       '3. Your payment will be initiated directly to your registered bank account upon successful procurement.',
-      '4. Please arrive on your scheduled date. Late arrivals may not be accommodated.'
+      timeWindowStr
+        ? `4. Please arrive during your estimated arrival window (${timeWindowStr}) on your scheduled date.`
+        : '4. Please arrive on your scheduled date. Late arrivals may not be accommodated.'
     ];
 
     instructions.forEach(instruction => {

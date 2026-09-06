@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Navigation, Info, Building, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, Info, RefreshCw } from 'lucide-react';
 
 export interface MapCentre {
   id: string;

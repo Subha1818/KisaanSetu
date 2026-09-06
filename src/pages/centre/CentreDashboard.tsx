@@ -200,6 +200,8 @@ const CentreDashboard: React.FC = () => {
   // Settings Edit states
   const [dailyCapacity, setDailyCapacity] = useState<number>(50);
   const [centreStatus, setCentreStatus] = useState<'open' | 'closed'>('open');
+  const [openingTime, setOpeningTime] = useState<string>('08:00');
+  const [avgMinutesPerFarmer, setAvgMinutesPerFarmer] = useState<number>(10);
   const [selectedNewDate, setSelectedNewDate] = useState('');
 
   // Location States
@@ -280,6 +282,8 @@ const CentreDashboard: React.FC = () => {
       setCentre(centreRow);
       setDailyCapacity(centreRow.daily_capacity);
       setCentreStatus(centreRow.status);
+      setOpeningTime(centreRow.opening_time ? centreRow.opening_time.substring(0, 5) : '08:00');
+      setAvgMinutesPerFarmer(centreRow.avg_minutes_per_farmer || 10);
 
       // Initialize dropdown selections
       const blockCode = centreRow.block_code?.toString() || '';
@@ -635,24 +639,30 @@ const CentreDashboard: React.FC = () => {
     e.preventDefault();
     if (!completingBooking || !session) return;
 
-    const brought = parseFloat(weightBrought);
-    const accepted = parseFloat(weightAccepted);
-    const rate = parseFloat(ratePerKg);
+    const rawBrought = parseFloat(weightBrought);
+    const rawAccepted = parseFloat(weightAccepted);
+    const rawRate = parseFloat(ratePerKg);
 
-    if (isNaN(brought) || isNaN(accepted) || isNaN(rate) || brought < 0 || accepted < 0 || rate < 0) {
+    if (isNaN(rawBrought) || isNaN(rawAccepted) || isNaN(rawRate) || rawBrought < 0 || rawAccepted < 0 || rawRate < 0) {
       setError('Please enter valid positive crop weighments.');
       return;
     }
 
-    if (accepted > brought) {
+    if (rawAccepted > rawBrought) {
       setError('Accepted weight cannot be higher than the brought weight.');
       return;
     }
 
+    // Cleanly round to 2 decimal places to eliminate IEEE-754 floating-point subtraction drift
+    // that violates PostgreSQL constraint chk_total_brought (quantity_brought = quantity_accepted + quantity_rejected)
+    const brought = Number(rawBrought.toFixed(2));
+    const accepted = Number(rawAccepted.toFixed(2));
+    const rejected = Number((brought - accepted).toFixed(2));
+    const rate = Number(rawRate.toFixed(2));
+
     try {
       setLoading(true);
       setError(null);
-      const rejected = brought - accepted;
 
       // 1. Insert Procurement Receipt
       const { data: proc, error: procErr } = await supabase
@@ -741,6 +751,8 @@ const CentreDashboard: React.FC = () => {
         .update({
           daily_capacity: dailyCapacity,
           status: centreStatus,
+          opening_time: openingTime + ':00',
+          avg_minutes_per_farmer: avgMinutesPerFarmer,
           block_code: parseInt(selectedBlockCode),
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
@@ -1543,6 +1555,27 @@ const CentreDashboard: React.FC = () => {
                     <option value="closed">Closed / Blocked</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Daily Opening Time</label>
+                  <input
+                    type="time"
+                    value={openingTime}
+                    onChange={(e) => setOpeningTime(e.target.value)}
+                    required
+                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Avg. Minutes Per Farmer (Fallback)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={avgMinutesPerFarmer}
+                    onChange={(e) => setAvgMinutesPerFarmer(parseInt(e.target.value) || 1)}
+                    required
+                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                  />
+                </div>
 
 
                 <div className="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
@@ -1871,6 +1904,7 @@ const CentreDashboard: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Quantity Brought (kg)</label>
                     <input
                       type="number"
+                      step="any"
                       required
                       value={weightBrought}
                       onChange={(e) => setWeightBrought(e.target.value)}
@@ -1883,6 +1917,7 @@ const CentreDashboard: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Quantity Accepted (kg)</label>
                     <input
                       type="number"
+                      step="any"
                       required
                       value={weightAccepted}
                       onChange={(e) => setWeightAccepted(e.target.value)}
@@ -1921,11 +1956,13 @@ const CentreDashboard: React.FC = () => {
                       <div>
                         <span className="block font-medium">MSP Payout Amount</span>
                         <span className="font-extrabold text-sm block">
-                          ₹{(parseFloat(weightAccepted) * parseFloat(ratePerKg)).toLocaleString('en-IN')}
+                          ₹{(parseFloat(weightAccepted) * parseFloat(ratePerKg)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="block text-[10px]">Rejected: {Math.max(0, parseFloat(weightBrought) - parseFloat(weightAccepted)) || 0} kg</span>
+                        <span className="block text-[10px]">
+                          Rejected: {Math.max(0, Number((parseFloat(weightBrought || '0') - parseFloat(weightAccepted || '0')).toFixed(2))) || 0} kg
+                        </span>
                       </div>
                     </div>
                   )}
