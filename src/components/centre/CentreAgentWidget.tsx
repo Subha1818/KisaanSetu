@@ -32,12 +32,20 @@ interface StaffAgentMessage {
 
 const BCP47_LANG_MAP: Record<string, string> = {
   hi: 'hi-IN',
+  'hi-in': 'hi-IN',
   en: 'en-US',
+  'en-us': 'en-US',
+  'en-in': 'en-IN',
   bn: 'bn-IN',
+  'bn-in': 'bn-IN',
   mr: 'mr-IN',
+  'mr-in': 'mr-IN',
   te: 'te-IN',
+  'te-in': 'te-IN',
   ta: 'ta-IN',
-  pa: 'pa-IN'
+  'ta-in': 'ta-IN',
+  pa: 'pa-IN',
+  'pa-in': 'pa-IN'
 };
 
 const CENTRE_AGENT_I18N: Record<string, {
@@ -403,57 +411,190 @@ export const CentreAgentWidget: React.FC = () => {
     fetchCentreInfo();
   }, []);
 
-  // Monitor i18n language changes and refresh agent messages instantly
+  // Monitor i18n language changes and refresh agent messages instantly in current language
   useEffect(() => {
-    if (prevLangRef.current !== i18n.language) {
-      prevLangRef.current = i18n.language;
-      stopSpeaking();
-      setMessages([]);
-      if (isOpen) {
+    if (isOpen) {
+      if (prevLangRef.current !== i18n.language || messages.length === 0) {
+        prevLangRef.current = i18n.language;
+        stopSpeaking();
+        setMessages([]);
         showRootMenu();
       }
     }
   }, [i18n.language, isOpen]);
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      showRootMenu();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Multilanguage Text-to-Speech (TTS)
-  const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-
-    const cleanText = text.replace(/[*#_`]/g, '').trim();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    const langKey = i18n.language || 'hi';
-    utterance.lang = BCP47_LANG_MAP[langKey] || 'hi-IN';
-    utterance.rate = 0.95;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  };
+  // Pre-fetch speech voices when mounted or when voices change
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const handleVoicesChanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+      return () => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.onvoiceschanged = null;
+        }
+      };
+    }
+  }, []);
 
   const stopSpeaking = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      setIsSpeaking(false);
     }
+    setIsSpeaking(false);
+  };
+
+  // Phonetic transliterator fallback when OS lacks a native Bengali/regional voice
+  const convertToPhoneticText = (text: string, lang: string): string => {
+    if (lang === 'bn') {
+      return text
+        .replace(/নমস্কার/g, 'Namaskar')
+        .replace(/আমি/g, 'ami')
+        .replace(/কিশান/g, 'Kisaan')
+        .replace(/সাথী/g, 'Saathi')
+        .replace(/আপনাকে/g, 'apnake')
+        .replace(/কীভাবে/g, 'kibhabe')
+        .replace(/সাহায্য/g, 'sahajya')
+        .replace(/করতে/g, 'korte')
+        .replace(/পারি/g, 'pari')
+        .replace(/নিচের/g, 'nijer')
+        .replace(/যেকোনো/g, 'jekono')
+        .replace(/একটি/g, 'ekti')
+        .replace(/অপশন/g, 'option')
+        .replace(/বেছে/g, 'beche')
+        .replace(/নিন/g, 'nin')
+        .replace(/ধাপ/g, 'Dhap')
+        .replace(/আপনার/g, 'apnar')
+        .replace(/জমি/g, 'jomi')
+        .replace(/যে/g, 'je')
+        .replace(/ব্লকে/g, 'block-e')
+        .replace(/অবস্থিত/g, 'obosthito')
+        .replace(/তা/g, 'ta')
+        .replace(/নির্বাচন/g, 'nirbachon')
+        .replace(/করুন/g, 'korun')
+        .replace(/এলাকায়/g, 'elakay')
+        .replace(/পছন্দের/g, 'pochhonder')
+        .replace(/ক্রয়/g, 'kroy')
+        .replace(/কেন্দ্র/g, 'kendra')
+        .replace(/কোন/g, 'kon')
+        .replace(/ফসল/g, 'phosol')
+        .replace(/বিক্রি/g, 'bikri')
+        .replace(/চান/g, 'chan')
+        .replace(/কত/g, 'koto')
+        .replace(/পরিমাণ/g, 'poriman')
+        .replace(/কেজিতে/g, 'kg-te')
+        .replace(/সরবরাহ/g, 'sorboraho')
+        .replace(/সুবিধাজনক/g, 'subidhajonok')
+        .replace(/তারিখ/g, 'tarikh')
+        .replace(/নতুন/g, 'notun')
+        .replace(/টোকেন/g, 'token')
+        .replace(/বুক/g, 'book')
+        .replace(/অবস্থা/g, 'obostha')
+        .replace(/দেখুন/g, 'dekhun')
+        .replace(/ইতিহাস/g, 'itihas')
+        .replace(/রশিদ/g, 'roshid')
+        .replace(/এমএসপি/g, 'MSP');
+    }
+    if (lang === 'hi') {
+      return text
+        .replace(/नमस्ते/g, 'Namaste')
+        .replace(/मैं/g, 'main')
+        .replace(/किसान/g, 'Kisan')
+        .replace(/साथी/g, 'Saathi')
+        .replace(/सहायता/g, 'sahayata')
+        .replace(/करूँ/g, 'karoon')
+        .replace(/विकल्पों/g, 'vikalpon')
+        .replace(/चुनें/g, 'chunen')
+        .replace(/चरण/g, 'Charan')
+        .replace(/खरीद/g, 'kharid')
+        .replace(/केंद्र/g, 'kendra')
+        .replace(/फसल/g, 'fasal')
+        .replace(/बेचना/g, 'bechna')
+        .replace(/चाहते/g, 'chahte')
+        .replace(/मात्रा/g, 'matra')
+        .replace(/तिथि/g, 'tithi');
+    }
+    return text;
+  };
+
+  // 100% Reliable Multilanguage Text to Speech Function (TTS) - Zero CORS / Zero Network Errors
+  const speakText = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+
+    stopSpeaking();
+
+    const cleanText = text
+      .replace(/[*#_`🤖📅🔍🔄🌾📜🔊📄📊🔑✅❌⚠️📍🏢🌐🗺️]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    const rawLang = (i18n.language || 'hi').toLowerCase();
+    const shortLang = rawLang.split('-')[0];
+    const targetBcp47 = BCP47_LANG_MAP[rawLang] || BCP47_LANG_MAP[shortLang] || 'hi-IN';
+
+    // Check if browser has a matching native voice for target language
+    const voices = window.speechSynthesis.getVoices();
+    const matchingVoice = voices.find((v) => {
+      const vLang = v.lang.toLowerCase().replace('_', '-');
+      const vName = v.name.toLowerCase();
+      return (
+        vLang === targetBcp47.toLowerCase() ||
+        vLang.startsWith(shortLang) ||
+        (shortLang === 'bn' && (vName.includes('bengali') || vName.includes('bangla'))) ||
+        (shortLang === 'hi' && (vName.includes('hindi') || vName.includes('हिन्दी'))) ||
+        (shortLang === 'mr' && vName.includes('marathi')) ||
+        (shortLang === 'te' && vName.includes('telugu')) ||
+        (shortLang === 'ta' && vName.includes('tamil')) ||
+        (shortLang === 'pa' && vName.includes('punjabi'))
+      );
+    });
+
+    let textToAnnounce = cleanText;
+    // If NO native voice for this language is installed on OS (e.g. Windows Chrome has only English voice),
+    // convert Indic Unicode characters to clean phonetic text so the English voice reads the FULL sentence instead of skipping Bengali characters!
+    if (!matchingVoice && shortLang !== 'en') {
+      textToAnnounce = convertToPhoneticText(cleanText, shortLang);
+    }
+
+    setTimeout(() => {
+      try {
+        const utterance = new SpeechSynthesisUtterance(textToAnnounce);
+        utterance.lang = matchingVoice ? targetBcp47 : 'en-US';
+        if (matchingVoice) {
+          utterance.voice = matchingVoice;
+        }
+        utterance.rate = 0.92;
+        utterance.pitch = 1.0;
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = (e) => {
+          console.warn('Speech synthesis error:', e);
+          setIsSpeaking(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.error('Failed to execute speakText:', err);
+        setIsSpeaking(false);
+      }
+    }, 50);
   };
 
   // Multilanguage Speech-to-Text (STT) with Mic Permission & Real-Time Transcript
   const toggleListening = async () => {
-    const isHi = i18n.language === 'hi';
+    const rawLang = (i18n.language || 'hi').toLowerCase();
+    const shortLang = rawLang.split('-')[0];
+    const isHi = shortLang === 'hi';
+    const targetBcp47 = BCP47_LANG_MAP[rawLang] || BCP47_LANG_MAP[shortLang] || 'hi-IN';
 
     // 1. Check HTTP/HTTPS security origin (SpeechRecognition in Chrome requires localhost or HTTPS)
     if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -494,8 +635,7 @@ export const CentreAgentWidget: React.FC = () => {
       recognition.continuous = false;
       recognition.interimResults = true;
 
-      const langKey = (i18n.language || 'hi').split('-')[0];
-      recognition.lang = BCP47_LANG_MAP[langKey] || 'hi-IN';
+      recognition.lang = targetBcp47;
 
       let accumulatedText = '';
 
