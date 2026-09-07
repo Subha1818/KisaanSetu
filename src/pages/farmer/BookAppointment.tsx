@@ -169,17 +169,20 @@ const BookAppointment: React.FC = () => {
         setProducts(prodData || []);
 
         // Query Slots (dates in future or today, filter out closed)
-        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const { data: dateData, error: dateErr } = await supabase
           .from('booking_dates')
           .select('*')
           .eq('centre_id', selectedCentre.id)
-          .gte('date', todayStr)
+          .gte('date', localTodayStr)
           .neq('status', 'closed')
           .order('date', { ascending: true });
 
         if (dateErr) throw new Error(dateErr.message);
-        setDates(dateData || []);
+        // Ensure no expired dates in the past are ever presented as bookable
+        const validDates = (dateData || []).filter(d => d.date >= localTodayStr && d.status !== 'closed');
+        setDates(validDates);
 
         // Clear previous steps selections
         setSelectedProduct(null);

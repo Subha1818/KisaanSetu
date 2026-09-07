@@ -405,6 +405,14 @@ const CentreDashboard: React.FC = () => {
 
       if (!pastDates || pastDates.length === 0) return;
 
+      // Flip status to 'closed' for all past booking_dates so they are never offered as bookable
+      await supabase
+        .from('booking_dates')
+        .update({ status: 'closed' })
+        .eq('centre_id', centreId)
+        .lt('date', localDateStr)
+        .neq('status', 'closed');
+
       const pastDateIds = pastDates.map((d: any) => d.id);
 
       // Find bookings on past dates still stuck in booked/called

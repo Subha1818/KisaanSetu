@@ -47,19 +47,22 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
     try {
       setLoadingDates(true);
       setError(null);
-      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
       const { data, error: dateErr } = await supabase
         .from('booking_dates')
         .select('*')
         .eq('centre_id', booking.centre_id)
-        .gte('date', todayStr)
+        .gte('date', localTodayStr)
         .neq('status', 'closed')
         .order('date', { ascending: true });
 
       if (dateErr) throw dateErr;
       
-      const availableDates = (data || []).filter(d => d.id !== booking.booking_date_id);
+      const availableDates = (data || []).filter(
+        d => d.id !== booking.booking_date_id && d.date >= localTodayStr && d.status !== 'closed'
+      );
       setDates(availableDates);
     } catch (err: any) {
       setError(err.message || 'Failed to load available dates.');
