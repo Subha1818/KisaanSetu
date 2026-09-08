@@ -41,16 +41,16 @@ const RejectedCentre: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="bg-white max-w-md w-full rounded-2xl shadow-xl border border-slate-200 p-8 text-center relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-6">
+      <div className="bg-white max-w-md w-full rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-rose-500"></div>
         
         <div className="mx-auto w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 text-rose-500">
           <XCircle className="w-10 h-10" />
         </div>
         
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Registration Not Approved</h1>
-        <p className="text-slate-600 mb-6 leading-relaxed">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Registration Not Approved</h1>
+        <p className="text-slate-600 mb-6 leading-relaxed text-sm sm:text-base">
           Your registration for <strong className="text-slate-900">{centreName}</strong> was not approved by the administration.
         </p>
         
@@ -63,7 +63,7 @@ const RejectedCentre: React.FC = () => {
         
         <button
           onClick={handleLogout}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors w-full"
+          className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-sm"
         >
           <LogOut className="w-4 h-4" />
           Sign Out

@@ -98,8 +98,8 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 p-4 sm:p-8 items-center justify-center">
-      <div className="w-full max-w-6xl bg-white flex rounded-[2rem] shadow-2xl shadow-emerald-900/5 border border-emerald-200 overflow-hidden min-h-[700px]">
+    <div className="min-h-screen flex bg-slate-50 p-3 sm:p-8 items-center justify-center">
+      <div className="w-full max-w-6xl bg-white flex rounded-2xl sm:rounded-[2rem] shadow-2xl shadow-emerald-900/5 border border-emerald-200 overflow-hidden min-h-0 sm:min-h-[700px]">
         
         {/* Left Decorative Panel (Hidden on Mobile) */}
         <div className="hidden lg:flex lg:w-1/2 bg-emerald-900 text-white flex-col p-12 relative overflow-hidden">
@@ -144,15 +144,15 @@ const Login: React.FC = () => {
         </div>
 
       {/* Right Form Panel */}
-      <div className="w-full lg:w-1/2 flex flex-col p-6 sm:p-12 overflow-y-auto justify-center">
+      <div className="w-full lg:w-1/2 flex flex-col p-5 sm:p-12 overflow-y-auto justify-center">
         <div className="w-full max-w-md mx-auto space-y-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1">
             <ArrowLeft className="w-4 h-4" />
             {t('auth.back_to_home')}
           </Link>
 
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-900 font-sans">{t('auth.sign_in')}</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans">{t('auth.sign_in')}</h2>
             <p className="mt-2 text-sm text-slate-600">
               {t('auth.or')} {' '}
               <Link to="/register" className="font-semibold text-emerald-600 hover:text-emerald-500 hover:underline">
@@ -168,7 +168,7 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="mt-6 sm:mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="mobile" className="block text-sm font-semibold text-slate-700 mb-1">
@@ -181,7 +181,7 @@ const Login: React.FC = () => {
                   required
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
-                  className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                  className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                   placeholder="e.g. 9876543210"
                 />
               </div>
@@ -198,13 +198,13 @@ const Login: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none rounded-xl relative block w-full px-4 py-3 pr-12 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] pr-12 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-emerald-600 focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-4 w-12 flex items-center justify-center text-slate-400 hover:text-emerald-600 focus:outline-none cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -216,7 +216,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center items-center py-3.5 min-h-[48px] px-4 border border-transparent text-base sm:text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? (
                   <Loader className="w-5 h-5 animate-spin text-white" />

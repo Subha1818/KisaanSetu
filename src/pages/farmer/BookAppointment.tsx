@@ -371,7 +371,7 @@ const BookAppointment: React.FC = () => {
             }
           }}
           aria-label={step === 1 ? t('booking.back_dashboard') : t('booking.back_prev')}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all font-semibold cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2.5 min-h-[44px] rounded-xl text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all font-semibold cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           <span>{step === 1 ? t('booking.back_dashboard') : t('booking.back_prev')}</span>
@@ -576,7 +576,7 @@ const BookAppointment: React.FC = () => {
                         setSelectedDistrictCode('');
                         setSelectedBlockCode('');
                       }}
-                      className="block w-full rounded-xl border border-emerald-200/80 py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 sm:text-sm bg-white shadow-sm hover:border-emerald-300 transition-all font-medium"
+                      className="block w-full rounded-xl border border-emerald-200/80 py-3 px-4 min-h-[44px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base sm:text-sm bg-white shadow-sm hover:border-emerald-300 transition-all font-medium"
                     >
                       <option value="">{t('booking.select_state')}</option>
                       {statesList.map((s) => (
@@ -601,7 +601,7 @@ const BookAppointment: React.FC = () => {
                         setSelectedBlockCode('');
                       }}
                       disabled={!selectedStateCode}
-                      className="block w-full rounded-xl border border-emerald-200/80 py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 sm:text-sm disabled:opacity-50 disabled:bg-slate-50 bg-white shadow-sm hover:border-emerald-300 transition-all font-medium disabled:cursor-not-allowed"
+                      className="block w-full rounded-xl border border-emerald-200/80 py-3 px-4 min-h-[44px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base sm:text-sm disabled:opacity-50 disabled:bg-slate-50 bg-white shadow-sm hover:border-emerald-300 transition-all font-medium disabled:cursor-not-allowed"
                     >
                       <option value="">{t('booking.select_district')}</option>
                       {districtsList.map((d) => (
@@ -623,7 +623,7 @@ const BookAppointment: React.FC = () => {
                       value={selectedBlockCode}
                       onChange={(e) => setSelectedBlockCode(e.target.value)}
                       disabled={!selectedDistrictCode}
-                      className="block w-full rounded-xl border border-emerald-200/80 py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 sm:text-sm disabled:opacity-50 disabled:bg-slate-50 bg-white shadow-sm hover:border-emerald-300 transition-all font-medium disabled:cursor-not-allowed"
+                      className="block w-full rounded-xl border border-emerald-200/80 py-3 px-4 min-h-[44px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base sm:text-sm disabled:opacity-50 disabled:bg-slate-50 bg-white shadow-sm hover:border-emerald-300 transition-all font-medium disabled:cursor-not-allowed"
                     >
                       <option value="">{t('booking.select_block')}</option>
                       {blocksList.map((b) => (
@@ -638,7 +638,7 @@ const BookAppointment: React.FC = () => {
                     onClick={() => setStep(2)}
                     disabled={!selectedStateCode || !selectedDistrictCode || !selectedBlockCode}
                     aria-label={t('booking.find_centres')}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer text-sm"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer text-sm sm:text-base"
                   >
                     {t('booking.find_centres')}
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -791,7 +791,7 @@ const BookAppointment: React.FC = () => {
                       onClick={() => setStep(3)}
                       disabled={!selectedCentre}
                       aria-label={t('booking.select_products')}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer text-sm"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer text-sm sm:text-base"
                     >
                       {t('booking.select_products')}
                       <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -907,7 +907,7 @@ const BookAppointment: React.FC = () => {
                 onClick={() => setStep(4)}
                 disabled={!selectedProduct || !selectedDate}
                 aria-label={t('booking.proceed_summary')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer text-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer text-sm sm:text-base"
               >
                 {t('booking.proceed_summary')}
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -985,7 +985,7 @@ const BookAppointment: React.FC = () => {
                       value={quantity}
                       onChange={(e) => handleQtyChange(e.target.value)}
                       placeholder="e.g. 1500"
-                      className={`block w-full rounded-xl border py-3.5 pl-4 pr-12 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 sm:text-sm shadow-sm transition-all ${qtyError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-emerald-200/80'
+                      className={`block w-full rounded-xl border py-3.5 min-h-[48px] pl-4 pr-12 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base sm:text-sm shadow-sm transition-all ${qtyError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-emerald-200/80'
                         }`}
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-sm font-bold">
@@ -1010,7 +1010,7 @@ const BookAppointment: React.FC = () => {
                 onClick={handleConfirmBooking}
                 disabled={!quantity || !!qtyError || loading}
                 aria-label={t('booking.confirm_gen')}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/25 disabled:opacity-50 transition-all cursor-pointer text-sm w-full md:w-auto"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/25 disabled:opacity-50 transition-all cursor-pointer text-base sm:text-sm w-full md:w-auto"
               >
                 {loading ? (
                   <>
@@ -1080,7 +1080,7 @@ const BookAppointment: React.FC = () => {
             <div className="pt-4">
               <button
                 onClick={() => navigate('/farmer')}
-                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md text-sm cursor-pointer"
+                className="w-full py-3.5 min-h-[48px] bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md text-base sm:text-sm cursor-pointer"
               >
                 {t('booking.go_dashboard')}
               </button>

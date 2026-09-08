@@ -276,8 +276,8 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 p-4 sm:p-8 items-center justify-center">
-      <div className="w-full max-w-6xl bg-white flex rounded-[2rem] shadow-2xl shadow-emerald-900/5 border border-emerald-200 overflow-hidden min-h-[700px]">
+    <div className="min-h-screen flex bg-slate-50 p-3 sm:p-8 items-center justify-center">
+      <div className="w-full max-w-6xl bg-white flex rounded-2xl sm:rounded-[2rem] shadow-2xl shadow-emerald-900/5 border border-emerald-200 overflow-hidden min-h-0 sm:min-h-[700px]">
 
         {/* Left Decorative Panel (Hidden on Mobile) */}
         <div className="hidden lg:flex lg:w-1/2 bg-emerald-900 text-white flex-col p-12 relative overflow-hidden">
@@ -322,15 +322,15 @@ const Register: React.FC = () => {
         </div>
 
         {/* Right Form Panel */}
-        <div className="w-full lg:w-1/2 flex flex-col p-6 sm:p-12 overflow-y-auto">
+        <div className="w-full lg:w-1/2 flex flex-col p-5 sm:p-12 overflow-y-auto">
           <div className="w-full max-w-md mx-auto space-y-8">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1">
               <ArrowLeft className="w-4 h-4" />
               {t('auth.back_to_home')}
             </Link>
 
             <div>
-              <h2 className="text-3xl font-extrabold text-slate-900 font-sans">{t('auth.create_account')}</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans">{t('auth.create_account')}</h2>
               <p className="mt-2 text-sm text-slate-600">
                 {t('auth.already_have')} {' '}
                 <Link to="/login" className="font-semibold text-emerald-600 hover:text-emerald-500 hover:underline">
@@ -366,40 +366,45 @@ const Register: React.FC = () => {
             )}
 
             {stage === 'otp' && !success && (
-              <form className="mt-8 space-y-6" onSubmit={handleVerifyOtp}>
+              <form className="mt-6 sm:mt-8 space-y-6" onSubmit={handleVerifyOtp}>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">
-                      {t('auth.verify_mobile_title')}
+                    <label htmlFor="otpCode" className="block text-sm font-semibold text-slate-700 mb-1">
+                      {t('auth.enter_otp')}
                     </label>
-                    <p className="text-sm text-slate-600 mb-4">
-                      {t('auth.verify_mobile_desc', { phone: `+91XXXXXXX${mobile.slice(-3)}` })}
-                    </p>
                     <input
+                      id="otpCode"
+                      name="otpCode"
                       type="text"
-                      required
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       maxLength={6}
+                      required
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                      className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-lg text-center tracking-widest font-bold transition-all"
-                      placeholder="XXXXXX"
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 tracking-widest text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                      placeholder="••••••"
+                      autoFocus
                     />
+                    <p className="text-xs text-slate-500 mt-2 text-center">
+                      {t('auth.otp_sent_to', { phone: mobile })}
+                    </p>
                   </div>
                   
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex justify-between items-center text-xs">
                     <button
                       type="button"
                       onClick={() => setStage('form')}
-                      className="text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                      className="text-slate-500 hover:text-slate-800 font-semibold transition-colors py-2"
                     >
-                      &larr; {t('auth.back_to_edit')}
+                      ← {t('auth.change_details')}
                     </button>
                     
                     <button
                       type="button"
                       onClick={handleResendOtp}
                       disabled={otpCountdown > 0 || loading}
-                      className="text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors py-2"
                     >
                       {otpCountdown > 0 ? t('auth.resend_in', { seconds: otpCountdown.toString().padStart(2, '0') }) : t('auth.resend_code')}
                     </button>
@@ -410,7 +415,7 @@ const Register: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading || otpCode.length !== 6}
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center items-center py-3.5 min-h-[48px] px-4 border border-transparent text-base sm:text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {loading ? (
                       <Loader className="w-5 h-5 animate-spin text-white" />
@@ -495,7 +500,7 @@ const Register: React.FC = () => {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                     placeholder="Narendra Modi"
                   />
                 </div>
@@ -510,7 +515,7 @@ const Register: React.FC = () => {
                     required
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
-                    className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                    className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                     placeholder="e.g. 9876543210"
                   />
                 </div>
@@ -526,13 +531,13 @@ const Register: React.FC = () => {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="appearance-none rounded-xl relative block w-full px-4 py-3 pr-12 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] pr-12 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                       placeholder={t('auth.min_6_chars')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-emerald-600 focus:outline-none"
+                      className="absolute inset-y-0 right-0 pr-4 w-12 flex items-center justify-center text-slate-400 hover:text-emerald-600 focus:outline-none cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -556,7 +561,7 @@ const Register: React.FC = () => {
                       required
                       value={centreName}
                       onChange={(e) => setCentreName(e.target.value)}
-                      className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                       placeholder="e.g. Rampur Depot B"
                     />
                   </div>
@@ -567,7 +572,7 @@ const Register: React.FC = () => {
                       value={selectedStateCode}
                       onChange={(e) => setSelectedStateCode(e.target.value)}
                       required
-                      className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm cursor-pointer"
                     >
                       <option value="">{t('booking.select_state')}</option>
                       {statesList.map((state) => (
@@ -585,7 +590,7 @@ const Register: React.FC = () => {
                       onChange={(e) => setSelectedDistrictCode(e.target.value)}
                       required
                       disabled={!selectedStateCode}
-                      className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer"
                     >
                       <option value="">{t('booking.select_district')}</option>
                       {districtsList.map((district) => (
@@ -603,7 +608,7 @@ const Register: React.FC = () => {
                       onChange={(e) => setSelectedBlockCode(e.target.value)}
                       required
                       disabled={!selectedDistrictCode}
-                      className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                      className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer"
                     >
                       <option value="">{t('booking.select_block')}</option>
                       {blocksList.map((block) => (
@@ -622,9 +627,9 @@ const Register: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleGetLocation}
-                        className="text-xs font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-700"
+                        className="text-xs font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-700 py-1 cursor-pointer"
                       >
-                        <MapPin className="w-3 h-3" />
+                        <MapPin className="w-3.5 h-3.5" />
                         Use My Location
                       </button>
                     </div>
@@ -635,7 +640,7 @@ const Register: React.FC = () => {
                         placeholder="Latitude"
                         value={latitude}
                         onChange={(e) => setLatitude(e.target.value)}
-                        className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                        className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                       />
                       <input
                         type="number"
@@ -643,7 +648,7 @@ const Register: React.FC = () => {
                         placeholder="Longitude"
                         value={longitude}
                         onChange={(e) => setLongitude(e.target.value)}
-                        className="appearance-none rounded-xl relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-all"
+                        className="appearance-none rounded-xl relative block w-full px-4 py-3 min-h-[48px] border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base sm:text-sm transition-all"
                       />
                     </div>
                   </div>
@@ -654,7 +659,7 @@ const Register: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading || success || (role === 'staff' && (!selectedBlockCode || !centreName))}
-                  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group relative w-full flex justify-center items-center py-3.5 min-h-[48px] px-4 border border-transparent text-base sm:text-sm font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md shadow-emerald-600/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <Loader className="w-5 h-5 animate-spin text-white" />

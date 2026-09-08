@@ -291,7 +291,7 @@ const FarmerDashboard: React.FC = () => {
     <div className="space-y-6 relative z-0">
       <DashboardBackground variant="farmer" />
       {/* Hero Welcome Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-8 shadow-xl shadow-emerald-950/15 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 sm:p-8 shadow-xl shadow-emerald-950/15 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         {/* Minimalist Panoramic Indian Rural Farm & Harvest SVG */}
         <div className="absolute right-0 top-0 bottom-0 w-[58%] md:w-[65%] lg:w-[70%] max-w-[850px] pointer-events-none hidden md:block overflow-hidden">
           <svg viewBox="0 0 750 220" fill="none" preserveAspectRatio="xMaxYMid meet" className="w-full h-full">
@@ -394,16 +394,16 @@ const FarmerDashboard: React.FC = () => {
       {activeBooking ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Appointment Details */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm space-y-6">
             <div className="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
               <div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wide">
                   {t('dashboard.upcoming_badge')}
                 </span>
-                <h2 className="text-2xl font-bold text-slate-900 mt-2">{t('dashboard.active_ticket')}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-2">{t('dashboard.active_ticket')}</h2>
               </div>
               <div className="text-left sm:text-right">
-                <span className="text-sm text-slate-500 block font-medium">{t('dashboard.status')}</span>
+                <span className="text-xs sm:text-sm text-slate-500 block font-medium">{t('dashboard.status')}</span>
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase mt-1 border ${
                   activeBooking.status === 'in_progress' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
                   activeBooking.status === 'called' ? 'bg-amber-50 text-amber-700 border-amber-200' :
@@ -416,14 +416,14 @@ const FarmerDashboard: React.FC = () => {
             </div>
 
             {/* Token Highlight */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="bg-slate-50 rounded-2xl p-4 sm:p-6 border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                 <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-200 shrink-0">
                   <QRCodeSVG value={activeBooking.id} size={80} level="M" />
                 </div>
-                <div className="text-center sm:text-left">
+                <div>
                   <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">{t('dashboard.queue_token')}</p>
-                  <p className="text-3xl font-extrabold text-slate-900 mt-1">{activeBooking.token}</p>
+                  <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-1">{activeBooking.token}</p>
                 </div>
               </div>
               <div className="text-center md:text-right">
@@ -497,7 +497,7 @@ const FarmerDashboard: React.FC = () => {
           </div>
 
           {/* Quick Info Sidebar */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm flex flex-col justify-between">
             <div>
               <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">{t('dashboard.instructions')}</h3>
               <ul className="mt-4 space-y-3.5 text-sm text-slate-600">
@@ -532,7 +532,7 @@ const FarmerDashboard: React.FC = () => {
                   }
                 }}
                 disabled={downloadingId === 'token'}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-sm shadow-md"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-base sm:text-sm shadow-md cursor-pointer"
               >
                 {downloadingId === 'token' ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 {t('dashboard.download_pass_pdf')}
@@ -543,7 +543,7 @@ const FarmerDashboard: React.FC = () => {
                   <button 
                     onClick={() => setIsRescheduleModalOpen(true)}
                     aria-label={t('dashboard.reschedule')}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors text-sm"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 min-h-[48px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors text-base sm:text-sm cursor-pointer"
                   >
                     <RefreshCw className="w-4 h-4" aria-hidden="true" />
                     {t('dashboard.reschedule')}
@@ -551,7 +551,7 @@ const FarmerDashboard: React.FC = () => {
                   <button 
                     onClick={() => setIsCancelModalOpen(true)}
                     aria-label={t('dashboard.cancel_booking')}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition-colors text-sm"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 min-h-[48px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition-colors text-base sm:text-sm cursor-pointer"
                   >
                     <XCircle className="w-4 h-4" aria-hidden="true" />
                     {t('dashboard.cancel_booking')}
@@ -621,7 +621,7 @@ const FarmerDashboard: React.FC = () => {
       <div className="mb-8">
         {/* Dynamic MSP Info Cards */}
         {activeTab === 'msp' && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 md:p-8 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-2">
                 <Award className="w-5 h-5 text-emerald-600" />
@@ -684,7 +684,7 @@ const FarmerDashboard: React.FC = () => {
 
         {/* Procurement History Section */}
         {activeTab === 'history' && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
               <History className="w-5 h-5 text-emerald-600" />
               <h2 className="text-xl font-bold text-slate-900">{t('dashboard.history_title')}</h2>
@@ -692,27 +692,27 @@ const FarmerDashboard: React.FC = () => {
             {procurementHistory.length > 0 ? (
               <div className="space-y-4">
                 {procurementHistory.map((item) => (
-                  <div key={item.id} className="border border-slate-100 rounded-xl p-5 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="font-bold text-slate-800 text-lg">{item.bookings.product_name}</span>
+                  <div key={item.id} className="border border-slate-100 rounded-xl p-4 sm:p-5 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                        <span className="font-bold text-slate-800 text-base sm:text-lg">{item.bookings.product_name}</span>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
                           {t('dashboard.history_token', { token: item.bookings.token })}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500 mb-2">
+                      <p className="text-xs sm:text-sm text-slate-500 mb-2">
                         {new Date(item.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-IN' : i18n.language, {
                           day: 'numeric', month: 'short', year: 'numeric'
                         })} • {item.bookings.procurement_centres.name}
                       </p>
-                      <div className="flex gap-4 text-sm font-medium">
+                      <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
                         <span className="text-slate-700">{t('dashboard.history_accepted', { qty: item.quantity_accepted })}</span>
-                        <span className="text-emerald-700">{t('dashboard.history_amount', { amount: item.total_amount?.toLocaleString('en-IN') })}</span>
+                        <span className="text-emerald-700 font-bold">{t('dashboard.history_amount', { amount: item.total_amount?.toLocaleString('en-IN') })}</span>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
-                      <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                    <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2.5 w-full md:w-auto mt-2 md:mt-0">
+                      <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${
                         item.payments[0]?.status === 'credited' ? 'bg-emerald-100 text-emerald-800' :
                         item.payments[0]?.status === 'initiated' ? 'bg-indigo-100 text-indigo-800' :
                         'bg-amber-100 text-amber-800'
@@ -724,7 +724,7 @@ const FarmerDashboard: React.FC = () => {
                       <button
                         onClick={() => handleDownloadReceipt(item.id)}
                         disabled={downloadingId === item.id}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-xs cursor-pointer"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-sm cursor-pointer"
                       >
                         {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                         {t('dashboard.download_receipt')}
@@ -745,8 +745,8 @@ const FarmerDashboard: React.FC = () => {
       {/* Cancel Modal */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+            <div className="p-5 sm:p-6 overflow-y-auto">
               <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
                 <AlertCircle className="w-6 h-6" />
               </div>
@@ -761,7 +761,7 @@ const FarmerDashboard: React.FC = () => {
                   id="cancel-reason"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-3 text-sm focus:ring-rose-500 focus:border-rose-500"
+                  className="w-full rounded-xl border border-slate-300 p-3 min-h-[44px] text-sm focus:ring-rose-500 focus:border-rose-500"
                 >
                   <option value="Personal reasons">{t('dashboard.reason_personal')}</option>
                   <option value="Wrong date selected">{t('dashboard.reason_wrong_date')}</option>
@@ -770,17 +770,17 @@ const FarmerDashboard: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
               <button 
                 onClick={() => setIsCancelModalOpen(false)}
-                className="flex-1 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+                className="flex-1 py-3 min-h-[44px] bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors text-sm"
               >
                 {t('dashboard.keep_booking')}
               </button>
               <button 
                 onClick={handleCancelBooking}
                 disabled={cancelLoading}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-colors text-sm flex justify-center items-center gap-2"
+                className="flex-1 py-3 min-h-[44px] bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-colors text-sm flex justify-center items-center gap-2"
               >
                 {cancelLoading ? <Loader className="w-4 h-4 animate-spin" /> : t('dashboard.confirm_cancel')}
               </button>

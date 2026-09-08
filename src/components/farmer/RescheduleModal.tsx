@@ -101,28 +101,28 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative" role="dialog" aria-modal="true" aria-labelledby="reschedule-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative max-h-[90vh] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="reschedule-title">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
           <div>
-            <h2 id="reschedule-title" className="text-xl font-bold text-slate-900">{t('reschedule.title')}</h2>
-            <p className="text-sm text-slate-500 mt-1">{t('reschedule.subtitle', { crop: booking.product_name })}</p>
+            <h2 id="reschedule-title" className="text-lg sm:text-xl font-bold text-slate-900">{t('reschedule.title')}</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{t('reschedule.subtitle', { crop: booking.product_name })}</p>
           </div>
           <button 
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+            className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors shrink-0 cursor-pointer"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
+            <div className="mb-4 sm:mb-6 p-3.5 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -147,7 +147,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                   onClose();
                   onSuccess();
                 }}
-                className="w-full mt-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all"
+                className="w-full mt-6 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all cursor-pointer text-sm"
               >
                 Return to Dashboard
               </button>
@@ -180,17 +180,17 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                         onClick={() => !isFull && setSelectedDate(d.id)}
                         disabled={isFull}
                         aria-label={`Select date ${displayDate}`}
-                        className={`w-full p-4 rounded-xl text-left border flex justify-between items-center transition-all ${
+                        className={`w-full p-3.5 sm:p-4 rounded-xl text-left border flex justify-between items-center transition-all min-h-[52px] cursor-pointer ${
                           isFull 
                             ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
                             : selectedDate === d.id
-                            ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500'
+                            ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20'
                             : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
                         <div>
-                          <span className="font-bold text-slate-800">{displayDate}</span>
-                          <span className="block text-xs text-slate-500 mt-1">
+                          <span className="font-bold text-slate-800 text-sm sm:text-base">{displayDate}</span>
+                          <span className="block text-xs text-slate-500 mt-0.5">
                             {t('booking.booked_fraction', { booked: d.booked_count, total: d.capacity })}
                           </span>
                         </div>
@@ -210,12 +210,12 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
 
         {/* Footer */}
         {!successToken && (
-          <div className="p-6 border-t border-slate-100 bg-white">
+          <div className="p-4 sm:p-6 border-t border-slate-100 bg-white shrink-0">
             <button
               onClick={handleReschedule}
               disabled={!selectedDate || loadingSubmit}
               aria-label={t('reschedule.confirm_reschedule')}
-              className="w-full inline-flex justify-center items-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all"
+              className="w-full inline-flex justify-center items-center gap-2 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all cursor-pointer text-sm sm:text-base shadow-sm"
             >
               {loadingSubmit ? (
                 <Loader className="w-5 h-5 animate-spin" />

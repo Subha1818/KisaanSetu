@@ -45,9 +45,10 @@ const AllBookingsTable = ({ centreId, bookingDateId }: { centreId?: string; book
         </div>
       </div>
 
-      {/* Styled Table Container */}
+      {/* Styled Table / Mobile Cards Container */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden relative shadow-xs">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left text-slate-600">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/90 border-b border-slate-200">
               <tr>
@@ -137,6 +138,51 @@ const AllBookingsTable = ({ centreId, bookingDateId }: { centreId?: string; book
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Stacked Cards View */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {allBookings.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 space-y-2">
+              <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <p className="text-slate-800 font-bold text-sm">No Bookings Scheduled</p>
+              <p className="text-slate-400 text-xs">There are no farmer drop-off bookings recorded for this selected date.</p>
+            </div>
+          ) : (
+            allBookings.map((booking) => (
+              <div key={booking.id} className="p-4 space-y-2.5 bg-white">
+                <div className="flex justify-between items-center">
+                  <span className="font-mono font-black text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 text-xs tracking-wide">
+                    {booking.token}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    booking.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    booking.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    booking.status === 'called' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse' :
+                    booking.status === 'no_show' ? 'bg-red-50 text-red-700 border-red-200' :
+                    booking.status === 'cancelled' ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                    'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    {booking.status.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm pt-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-100 shrink-0">
+                      {booking.users?.name ? booking.users.name.charAt(0).toUpperCase() : 'F'}
+                    </div>
+                    <span className="font-bold text-slate-800 text-sm">{booking.users?.name || 'Farmer'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-slate-800 block text-xs">{booking.product_name}</span>
+                    <span className="text-xs text-slate-500">{booking.quantity} kg</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -1000,7 +1046,7 @@ const CentreDashboard: React.FC = () => {
       <DashboardBackground variant="centre" />
       {/* Centre Dashboard Banner */}
       {centre && (
-        <div className="bg-gradient-to-r from-blue-800 to-indigo-700 text-white rounded-2xl p-8 shadow-xl shadow-indigo-950/15 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-800 to-indigo-700 text-white rounded-2xl p-5 sm:p-8 shadow-xl shadow-indigo-950/15 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
           {/* Minimalist Panoramic Depot Weighbridge & Intake Logistics SVG */}
           <div className="absolute right-0 top-0 bottom-0 w-[58%] md:w-[65%] lg:w-[70%] max-w-[850px] pointer-events-none hidden md:block overflow-hidden">
             <svg viewBox="0 0 750 220" fill="none" preserveAspectRatio="xMaxYMid meet" className="w-full h-full">
@@ -1130,10 +1176,10 @@ const CentreDashboard: React.FC = () => {
       )}
 
       {/* Main Tab Links */}
-      <div className="flex border-b border-slate-200 gap-1 bg-white p-1 rounded-xl border overflow-x-auto whitespace-nowrap">
+      <div className="flex border-b border-slate-200 gap-1 bg-white p-1 rounded-xl border overflow-x-auto whitespace-nowrap scrollbar-none overscroll-contain">
         <button
           onClick={() => setActiveTab('queue')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
             activeTab === 'queue'
               ? 'bg-indigo-50 text-indigo-700 shadow-sm'
               : 'text-slate-600 hover:bg-slate-50'
@@ -1144,7 +1190,7 @@ const CentreDashboard: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('all_bookings')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
             activeTab === 'all_bookings'
               ? 'bg-indigo-50 text-indigo-700 shadow-sm'
               : 'text-slate-600 hover:bg-slate-50'
@@ -1155,7 +1201,7 @@ const CentreDashboard: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('payouts')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
             activeTab === 'payouts'
               ? 'bg-indigo-50 text-indigo-700 shadow-sm'
               : 'text-slate-600 hover:bg-slate-50'
@@ -1166,7 +1212,7 @@ const CentreDashboard: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
             activeTab === 'settings'
               ? 'bg-indigo-50 text-indigo-700 shadow-sm'
               : 'text-slate-600 hover:bg-slate-50'
@@ -1312,91 +1358,162 @@ const CentreDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Bookings Queue Table */}
+          {/* Bookings Queue Table / Mobile Cards */}
           <div className="bg-white rounded-2xl border-2 border-indigo-100 overflow-hidden shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 text-lg">Today's Appointment Log</h3>
-              <span className="text-xs text-slate-400">Sorted by Queue Sequence</span>
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800 text-base sm:text-lg">Today's Appointment Log</h3>
+              <span className="text-xs text-slate-400 hidden sm:inline">Sorted by Queue Sequence</span>
             </div>
             
             {bookings.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 space-y-2">
-                <Users className="w-12 h-12 text-slate-300 mx-auto" />
+              <div className="p-8 sm:p-12 text-center text-slate-400 space-y-2">
+                <Users className="w-10 sm:w-12 h-10 sm:h-12 text-slate-300 mx-auto" />
                 <p className="font-semibold text-sm">No bookings scheduled for today.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-55 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
-                      <th className="py-4 px-6">Token</th>
-                      <th className="py-4 px-6">Farmer Name</th>
-                      <th className="py-4 px-6">Crop / Qty</th>
-                      <th className="py-4 px-6">Status</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {bookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-slate-50/50">
-                        <td className="py-4 px-6 font-extrabold text-slate-900">{booking.token}</td>
-                        <td className="py-4 px-6">
-                          <p className="font-bold text-slate-700">{booking.users?.name}</p>
-                          <p className="text-xs text-slate-400">{booking.users?.mobile_number}</p>
-                        </td>
-                        <td className="py-4 px-6">
-                          <p className="font-semibold text-slate-700">{booking.product_name}</p>
-                          <p className="text-xs text-slate-500">{booking.quantity} kg (est.)</p>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                            booking.status === 'booked' && 'bg-slate-100 text-slate-700'
-                          } ${
-                            booking.status === 'called' && 'bg-amber-100 text-amber-700'
-                          } ${
-                            booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
-                          } ${
-                            booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
-                          } ${
-                            booking.status === 'no_show' && 'bg-red-100 text-red-700'
-                          }`}>
-                            {booking.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-right space-x-1">
-                          {booking.status === 'called' && (
-                            <button
-                              onClick={() => handleStartProcurement(booking.id)}
-                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all"
-                            >
-                              <Play className="w-3.5 h-3.5" />
-                              Start
-                            </button>
-                          )}
-                          {booking.status === 'in_progress' && (
-                            <button
-                              onClick={() => setCompletingBooking(booking)}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              Complete
-                            </button>
-                          )}
-                          {(booking.status === 'booked' || booking.status === 'called') && (
-                            <button
-                              onClick={() => handleSkipBooking(booking.id, booking.status)}
-                              className="px-3 py-1.5 border border-red-200 hover:bg-red-50 text-red-600 font-bold rounded-lg text-xs inline-flex items-center gap-1 transition-all"
-                            >
-                              <AlertTriangle className="w-3.5 h-3.5" />
-                              Skip
-                            </button>
-                          )}
-                        </td>
+              <>
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-55 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
+                        <th className="py-4 px-6">Token</th>
+                        <th className="py-4 px-6">Farmer Name</th>
+                        <th className="py-4 px-6">Crop / Qty</th>
+                        <th className="py-4 px-6">Status</th>
+                        <th className="py-4 px-6 text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                      {bookings.map((booking) => (
+                        <tr key={booking.id} className="hover:bg-slate-50/50">
+                          <td className="py-4 px-6 font-extrabold text-slate-900">{booking.token}</td>
+                          <td className="py-4 px-6">
+                            <p className="font-bold text-slate-700">{booking.users?.name}</p>
+                            <p className="text-xs text-slate-400">{booking.users?.mobile_number}</p>
+                          </td>
+                          <td className="py-4 px-6">
+                            <p className="font-semibold text-slate-700">{booking.product_name}</p>
+                            <p className="text-xs text-slate-500">{booking.quantity} kg (est.)</p>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                              booking.status === 'booked' && 'bg-slate-100 text-slate-700'
+                            } ${
+                              booking.status === 'called' && 'bg-amber-100 text-amber-700'
+                            } ${
+                              booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
+                            } ${
+                              booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
+                            } ${
+                              booking.status === 'no_show' && 'bg-red-100 text-red-700'
+                            }`}>
+                              {booking.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-right space-x-1">
+                            {booking.status === 'called' && (
+                              <button
+                                onClick={() => handleStartProcurement(booking.id)}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                              >
+                                <Play className="w-3.5 h-3.5" />
+                                Start
+                              </button>
+                            )}
+                            {booking.status === 'in_progress' && (
+                              <button
+                                onClick={() => setCompletingBooking(booking)}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                Complete
+                              </button>
+                            )}
+                            {(booking.status === 'booked' || booking.status === 'called') && (
+                              <button
+                                onClick={() => handleSkipBooking(booking.id, booking.status)}
+                                className="px-3 py-1.5 border border-red-200 hover:bg-red-50 text-red-600 font-bold rounded-lg text-xs inline-flex items-center gap-1 transition-all cursor-pointer"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Skip
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="block md:hidden divide-y divide-slate-100">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="p-4 space-y-3 bg-white">
+                      <div className="flex justify-between items-center">
+                        <span className="font-mono font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-md border border-slate-200 text-sm tracking-wide">
+                          {booking.token}
+                        </span>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          booking.status === 'booked' && 'bg-slate-100 text-slate-700'
+                        } ${
+                          booking.status === 'called' && 'bg-amber-100 text-amber-700'
+                        } ${
+                          booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
+                        } ${
+                          booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
+                        } ${
+                          booking.status === 'no_show' && 'bg-red-100 text-red-700'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-start text-sm pt-1">
+                        <div>
+                          <p className="font-bold text-slate-800 text-base">{booking.users?.name || 'Farmer'}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{booking.users?.mobile_number}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-slate-800 text-xs">{booking.product_name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{booking.quantity} kg (est.)</p>
+                        </div>
+                      </div>
+
+                      {/* Action buttons with minimum 44px height */}
+                      <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                        {booking.status === 'called' && (
+                          <button
+                            onClick={() => handleStartProcurement(booking.id)}
+                            className="w-full flex-1 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                          >
+                            <Play className="w-4 h-4" />
+                            Start Intake
+                          </button>
+                        )}
+                        {booking.status === 'in_progress' && (
+                          <button
+                            onClick={() => setCompletingBooking(booking)}
+                            className="w-full flex-1 py-3 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                          >
+                            <Check className="w-4 h-4" />
+                            Record Weighment
+                          </button>
+                        )}
+                        {(booking.status === 'booked' || booking.status === 'called') && (
+                          <button
+                            onClick={() => handleSkipBooking(booking.id, booking.status)}
+                            className="w-full sm:w-auto px-4 py-3 min-h-[44px] border border-red-200 hover:bg-red-50 text-red-600 font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                            Skip / No-Show
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -1442,94 +1559,171 @@ const CentreDashboard: React.FC = () => {
 
       {activeTab === 'payouts' && (
         <div className="bg-white rounded-2xl border-2 border-indigo-100 overflow-hidden shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
-          <div className="p-6 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-lg">Procured Grain Ledger & Payouts</h3>
+          <div className="p-4 sm:p-6 border-b border-slate-100">
+            <h3 className="font-bold text-slate-800 text-base sm:text-lg">Procured Grain Ledger & Payouts</h3>
             <p className="text-xs text-slate-400 mt-0.5">Track dropoff logs and update payout disbursement cycles.</p>
           </div>
 
           {procurements.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
+            <div className="p-8 sm:p-12 text-center text-slate-400">
               <Wallet className="w-12 h-12 text-slate-300 mx-auto" />
               <p className="font-semibold text-sm mt-2">No completed procurement weights logged yet.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-55 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
-                    <th className="py-4 px-6">Timestamp</th>
-                    <th className="py-4 px-6">Farmer</th>
-                    <th className="py-4 px-6">Accepted Weight</th>
-                    <th className="py-4 px-6">Calculated Payout</th>
-                    <th className="py-4 px-6">Disbursement Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {procurements.map((proc) => {
-                    const payRow = proc.payments?.[0];
-                    return (
-                      <tr key={proc.id} className="hover:bg-slate-50/50">
-                        <td className="py-4 px-6 text-slate-500 font-medium">
-                          {new Date(proc.created_at).toLocaleString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="py-4 px-6 font-bold text-slate-700">{proc.bookings?.users?.name}</td>
-                        <td className="py-4 px-6">
-                          <p className="font-bold text-slate-800">{proc.quantity_accepted} kg</p>
-                          <p className="text-xs text-slate-400">
-                            Brought: {proc.quantity_brought} kg | Rejected: {proc.quantity_rejected} kg
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
+                      <th className="py-4 px-6">Timestamp</th>
+                      <th className="py-4 px-6">Farmer</th>
+                      <th className="py-4 px-6">Accepted Weight</th>
+                      <th className="py-4 px-6">Calculated Payout</th>
+                      <th className="py-4 px-6">Disbursement Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {procurements.map((proc) => {
+                      const payRow = proc.payments?.[0];
+                      return (
+                        <tr key={proc.id} className="hover:bg-slate-50/50">
+                          <td className="py-4 px-6 text-slate-500 font-medium text-xs">
+                            {new Date(proc.created_at).toLocaleString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-4 px-6 font-bold text-slate-700">{proc.bookings?.users?.name}</td>
+                          <td className="py-4 px-6">
+                            <p className="font-bold text-slate-800">{proc.quantity_accepted} kg</p>
+                            <p className="text-xs text-slate-400">
+                              Brought: {proc.quantity_brought} kg | Rejected: {proc.quantity_rejected} kg
+                            </p>
+                          </td>
+                          <td className="py-4 px-6 font-extrabold text-slate-900">
+                            ₹{parseFloat(proc.total_amount?.toString() || '0').toLocaleString('en-IN')}
+                            <span className="text-[10px] text-slate-400 block font-normal mt-0.5">Rate: ₹{proc.rate_per_kg}/kg</span>
+                          </td>
+                          <td className="py-4 px-6">
+                            {payRow ? (
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={payRow.status}
+                                  onChange={(e) => handleUpdatePaymentStatus(payRow.id, e.target.value, payRow.status)}
+                                  className={`rounded-lg border px-3 py-1.5 text-xs font-bold focus:outline-none transition-all cursor-pointer ${
+                                    payRow.status === 'pending' && 'bg-amber-50 text-amber-700 border-amber-200'
+                                  } ${
+                                    payRow.status === 'initiated' && 'bg-blue-50 text-blue-700 border-blue-200'
+                                  } ${
+                                    payRow.status === 'credited' && 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  }`}
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="initiated">Initiated</option>
+                                  <option value="credited">Credited</option>
+                                </select>
+                                <button
+                                  title="Correct Status (requires reason)"
+                                  onClick={() => {
+                                    setCorrectionModal({ paymentId: payRow.id, currentStatus: payRow.status, bookingId: proc.booking_id });
+                                    setCorrectionStatus(payRow.status);
+                                    setCorrectionReason('');
+                                  }}
+                                  className="p-1.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 transition-colors cursor-pointer"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">No Payment Ledger</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Stacked Cards */}
+              <div className="block md:hidden divide-y divide-slate-100">
+                {procurements.map((proc) => {
+                  const payRow = proc.payments?.[0];
+                  return (
+                    <div key={proc.id} className="p-4 space-y-3 bg-white">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <p className="font-bold text-slate-800 text-base">{proc.bookings?.users?.name || 'Farmer'}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {new Date(proc.created_at).toLocaleString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </p>
-                        </td>
-                        <td className="py-4 px-6 font-extrabold text-slate-900">
-                          ₹{parseFloat(proc.total_amount?.toString() || '0').toLocaleString('en-IN')}
-                          <span className="text-[10px] text-slate-400 block font-normal mt-0.5">Rate: ₹{proc.rate_per_kg}/kg</span>
-                        </td>
-                        <td className="py-4 px-6">
-                          {payRow ? (
-                            <div className="flex items-center gap-2">
-                              {/* Normal forward-only dropdown */}
-                              <select
-                                value={payRow.status}
-                                onChange={(e) => handleUpdatePaymentStatus(payRow.id, e.target.value, payRow.status)}
-                                className={`rounded-lg border px-3 py-1.5 text-xs font-bold focus:outline-none transition-all ${
-                                  payRow.status === 'pending' && 'bg-amber-50 text-amber-700 border-amber-200'
-                                } ${
-                                  payRow.status === 'initiated' && 'bg-blue-50 text-blue-700 border-blue-200'
-                                } ${
-                                  payRow.status === 'credited' && 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                }`}
-                              >
-                                <option value="pending">Pending</option>
-                                <option value="initiated">Initiated</option>
-                                <option value="credited">Credited</option>
-                              </select>
-                              {/* FIX 2: Correction override — visually distinct pencil icon with orange color */}
-                              <button
-                                title="Correct Status (requires reason)"
-                                onClick={() => {
-                                  setCorrectionModal({ paymentId: payRow.id, currentStatus: payRow.status, bookingId: proc.booking_id });
-                                  setCorrectionStatus(payRow.status);
-                                  setCorrectionReason('');
-                                }}
-                                className="p-1.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 transition-colors"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-400">No Payment Ledger</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-extrabold text-slate-900 text-base">
+                            ₹{parseFloat(proc.total_amount?.toString() || '0').toLocaleString('en-IN')}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-medium">₹{proc.rate_per_kg}/kg</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs flex justify-between items-center">
+                        <div>
+                          <span className="text-slate-500 font-medium">Accepted:</span>
+                          <span className="font-bold text-slate-800 ml-1.5">{proc.quantity_accepted} kg</span>
+                        </div>
+                        <div className="text-slate-400 text-[11px]">
+                          Brought: {proc.quantity_brought} kg | Rej: {proc.quantity_rejected} kg
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Status:</span>
+                        {payRow ? (
+                          <div className="flex items-center gap-2 flex-1 justify-end">
+                            <select
+                              value={payRow.status}
+                              onChange={(e) => handleUpdatePaymentStatus(payRow.id, e.target.value, payRow.status)}
+                              className={`rounded-xl border px-3 py-2.5 min-h-[44px] text-xs font-bold focus:outline-none transition-all flex-1 max-w-[160px] cursor-pointer ${
+                                payRow.status === 'pending' && 'bg-amber-50 text-amber-700 border-amber-200'
+                              } ${
+                                payRow.status === 'initiated' && 'bg-blue-50 text-blue-700 border-blue-200'
+                              } ${
+                                payRow.status === 'credited' && 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              }`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="initiated">Initiated</option>
+                              <option value="credited">Credited</option>
+                            </select>
+                            <button
+                              title="Correct Status (requires reason)"
+                              onClick={() => {
+                                setCorrectionModal({ paymentId: payRow.id, currentStatus: payRow.status, bookingId: proc.booking_id });
+                                setCorrectionStatus(payRow.status);
+                                setCorrectionReason('');
+                              }}
+                              className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">No Payment Ledger</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -1538,7 +1732,7 @@ const CentreDashboard: React.FC = () => {
       {activeTab === 'settings' && centre && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main settings form */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-indigo-100 p-8 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
+          <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-indigo-100 p-5 sm:p-8 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300">
             <h3 className="font-bold text-slate-800 text-lg border-b border-slate-100 pb-3 mb-6">Operations & Capacity Rules</h3>
             
             <form onSubmit={handleUpdateSettings} className="space-y-6">
@@ -1549,7 +1743,7 @@ const CentreDashboard: React.FC = () => {
                     type="number"
                     value={dailyCapacity}
                     onChange={(e) => setDailyCapacity(parseInt(e.target.value) || 0)}
-                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -1557,7 +1751,7 @@ const CentreDashboard: React.FC = () => {
                   <select
                     value={centreStatus}
                     onChange={(e) => setCentreStatus(e.target.value as any)}
-                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px] cursor-pointer"
                   >
                     <option value="open">Open / Accepting Bookings</option>
                     <option value="closed">Closed / Blocked</option>
@@ -1570,7 +1764,7 @@ const CentreDashboard: React.FC = () => {
                     value={openingTime}
                     onChange={(e) => setOpeningTime(e.target.value)}
                     required
-                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -1581,7 +1775,7 @@ const CentreDashboard: React.FC = () => {
                     value={avgMinutesPerFarmer}
                     onChange={(e) => setAvgMinutesPerFarmer(parseInt(e.target.value) || 1)}
                     required
-                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px]"
                   />
                 </div>
 
@@ -1601,7 +1795,7 @@ const CentreDashboard: React.FC = () => {
                           setDistrictsList([]);
                           setBlocksList([]);
                         }}
-                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-xs bg-white"
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px] bg-white cursor-pointer"
                       >
                         <option value="">Select State</option>
                         {statesList.map((s) => (
@@ -1621,7 +1815,7 @@ const CentreDashboard: React.FC = () => {
                           setBlocksList([]);
                         }}
                         disabled={!selectedStateCode}
-                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-xs disabled:opacity-50 bg-white"
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px] disabled:opacity-50 bg-white cursor-pointer"
                       >
                         <option value="">Select District</option>
                         {districtsList.map((d) => (
@@ -1637,7 +1831,7 @@ const CentreDashboard: React.FC = () => {
                         value={selectedBlockCode}
                         onChange={(e) => setSelectedBlockCode(e.target.value)}
                         disabled={!selectedDistrictCode}
-                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-xs disabled:opacity-50 bg-white"
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px] disabled:opacity-50 bg-white cursor-pointer"
                       >
                         <option value="">Select Block</option>
                         {blocksList.map((b) => (
@@ -1653,9 +1847,9 @@ const CentreDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleGetLocation}
-                        className="text-xs font-bold text-indigo-600 flex items-center gap-1 hover:text-indigo-700 transition-colors"
+                        className="text-xs font-bold text-indigo-600 flex items-center gap-1 hover:text-indigo-700 transition-colors py-1 cursor-pointer"
                       >
-                        <MapPin className="w-3 h-3" />
+                        <MapPin className="w-3.5 h-3.5" />
                         Use My Location
                       </button>
                     </div>
@@ -1666,7 +1860,7 @@ const CentreDashboard: React.FC = () => {
                         placeholder="Latitude"
                         value={latitude}
                         onChange={(e) => setLatitude(e.target.value)}
-                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm bg-white"
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px] bg-white"
                       />
                       <input
                         type="number"
@@ -1674,7 +1868,7 @@ const CentreDashboard: React.FC = () => {
                         placeholder="Longitude"
                         value={longitude}
                         onChange={(e) => setLongitude(e.target.value)}
-                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm bg-white"
+                        className="block w-full rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[44px] bg-white"
                       />
                     </div>
                   </div>
@@ -1684,7 +1878,7 @@ const CentreDashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  className="w-full sm:w-auto min-h-[48px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? 'Saving...' : 'Save Settings'}
                 </button>
@@ -1700,14 +1894,14 @@ const CentreDashboard: React.FC = () => {
                   type="date"
                   value={selectedNewDate}
                   onChange={(e) => setSelectedNewDate(e.target.value)}
-                  className="block w-full sm:w-auto rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                  className="block w-full sm:w-auto rounded-xl border border-slate-300 py-3 px-4 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-base sm:text-sm min-h-[48px]"
                   min={new Date().toISOString().split('T')[0]}
                 />
                 <button
                   type="button"
                   onClick={handleAddOperatingDate}
                   disabled={!selectedNewDate || loading}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span className="text-lg leading-none">+</span> Add Date
                 </button>
@@ -1721,12 +1915,14 @@ const CentreDashboard: React.FC = () => {
                   <div className="flex flex-wrap gap-3">
                     {availableDates.filter(d => d.status !== 'closed').map(dateObj => {
                       const todayStr = new Date().toISOString().split('T')[0];
-                      const isPast = dateObj.date < todayStr;
-                      const badgeClasses = isPast 
-                        ? "inline-flex items-center bg-red-50 border border-red-100 text-red-700 rounded-lg overflow-hidden shadow-sm opacity-80"
-                        : "inline-flex items-center bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg overflow-hidden shadow-sm";
-                      const btnClasses = isPast
-                        ? "px-3 py-2 bg-red-100/50 hover:bg-red-200 hover:text-red-800 transition-colors border-l border-red-100"
+                      const isToday = dateObj.date === todayStr;
+                      
+                      const badgeClasses = isToday 
+                        ? "inline-flex items-center rounded-xl bg-emerald-50 border-2 border-emerald-300 text-emerald-800 overflow-hidden shadow-sm"
+                        : "inline-flex items-center rounded-xl bg-indigo-50/50 border border-indigo-100 text-indigo-900 overflow-hidden";
+                      
+                      const btnClasses = isToday
+                        ? "px-3 py-2 bg-emerald-100 hover:bg-red-100 hover:text-red-600 transition-colors border-l border-emerald-200"
                         : "px-3 py-2 bg-indigo-100/50 hover:bg-red-100 hover:text-red-600 transition-colors border-l border-indigo-100";
                       
                       return (
@@ -1753,7 +1949,7 @@ const CentreDashboard: React.FC = () => {
           </div>
 
           {/* Manage Centre accepted Products list */}
-          <div className="bg-white rounded-2xl border-2 border-indigo-100 p-8 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300 flex flex-col justify-between space-y-6">
+          <div className="bg-white rounded-2xl border-2 border-indigo-100 p-5 sm:p-8 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all duration-300 flex flex-col justify-between space-y-6">
             <div>
               <h3 className="font-bold text-slate-800 text-lg border-b border-slate-100 pb-3">Procurable Crops</h3>
               
@@ -1769,7 +1965,7 @@ const CentreDashboard: React.FC = () => {
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
                     required
-                    className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white"
+                    className="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base sm:text-xs min-h-[44px] sm:min-h-[38px] focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white"
                   />
                 </div>
                 <div>
@@ -1779,10 +1975,10 @@ const CentreDashboard: React.FC = () => {
                     value={newMaxQty}
                     onChange={(e) => setNewMaxQty(e.target.value)}
                     required
-                    className="block w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white"
+                    className="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base sm:text-xs min-h-[44px] sm:min-h-[38px] focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white"
                   />
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end pt-1">
                   {editingProduct && (
                     <button
                       type="button"
@@ -1791,16 +1987,16 @@ const CentreDashboard: React.FC = () => {
                         setNewProductName('');
                         setNewMaxQty('');
                       }}
-                      className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 font-bold rounded-lg text-[10px] text-slate-600 transition-all"
+                      className="px-3.5 py-2 min-h-[38px] border border-slate-200 hover:bg-slate-100 font-bold rounded-lg text-xs text-slate-600 transition-all cursor-pointer"
                     >
                       Cancel
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] shadow-sm transition-all inline-flex items-center gap-1"
+                    className="px-4 py-2 min-h-[38px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
                   >
-                    {editingProduct ? <Edit3 className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                    {editingProduct ? <Edit3 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                     {editingProduct ? 'Update Product' : 'Add Crop'}
                   </button>
                 </div>
@@ -1826,17 +2022,17 @@ const CentreDashboard: React.FC = () => {
                               setNewProductName(prod.product_name);
                               setNewMaxQty(prod.max_quantity_per_farmer.toString());
                             }}
-                            className="p-1.5 hover:bg-slate-100 rounded text-slate-500"
+                            className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 cursor-pointer"
                             title="Edit Product"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
+                            <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(prod.id)}
-                            className="p-1.5 hover:bg-red-50 text-red-500 rounded"
+                            className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-red-50 text-red-500 rounded-lg cursor-pointer"
                             title="Delete Product"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -1851,32 +2047,33 @@ const CentreDashboard: React.FC = () => {
 
       {/* WEIGHMENT MODAL (COMPLETE TICKET) */}
       {completingBooking && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden relative max-h-[90vh] flex flex-col my-auto">
             {/* Modal Top indicator */}
-            <div className="h-1.5 bg-emerald-600"></div>
+            <div className="h-1.5 bg-emerald-600 shrink-0"></div>
 
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    {completedProcurementId ? 'Procurement Complete' : 'Record Grain Dropoff'}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {completedProcurementId ? `Token ${completingBooking.token} successfully processed` : `Weighment checklist for Token ${completingBooking.token}`}
-                  </p>
-                </div>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-slate-400 hover:text-slate-600 text-sm font-bold"
-                >
-                  ✕
-                </button>
+            <div className="p-4 sm:p-6 pb-3 border-b border-slate-100 flex justify-between items-start shrink-0">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+                  {completedProcurementId ? 'Procurement Complete' : 'Record Grain Dropoff'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {completedProcurementId ? `Token ${completingBooking.token} successfully processed` : `Weighment checklist for Token ${completingBooking.token}`}
+                </p>
               </div>
+              <button
+                onClick={handleCloseModal}
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg text-lg font-bold cursor-pointer"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
 
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
               {completedProcurementId ? (
-                <div className="py-6 text-center space-y-6 flex flex-col items-center">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                <div className="py-4 sm:py-6 text-center space-y-5 sm:space-y-6 flex flex-col items-center">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
                   <div>
@@ -1887,14 +2084,14 @@ const CentreDashboard: React.FC = () => {
                     <button
                       onClick={handleDownloadReceipt}
                       disabled={isGeneratingPdf}
-                      className="w-full inline-flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-colors"
+                      className="w-full inline-flex items-center justify-center gap-2 py-3.5 min-h-[48px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-colors cursor-pointer text-sm"
                     >
                       {isGeneratingPdf ? <Loader className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
                       Download Receipt PDF
                     </button>
                     <button
                       onClick={handleCloseModal}
-                      className="w-full py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors"
+                      className="w-full py-3.5 min-h-[48px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer text-sm"
                     >
                       Done
                     </button>
@@ -1902,7 +2099,7 @@ const CentreDashboard: React.FC = () => {
                 </div>
               ) : (
                 <form onSubmit={handleRecordWeighment} className="space-y-4">
-                  <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-100 text-xs">
+                  <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl space-y-1.5 border border-slate-100 text-xs">
                     <p><strong>Farmer:</strong> {completingBooking.users?.name}</p>
                     <p><strong>Crop Type:</strong> {completingBooking.product_name}</p>
                     <p><strong>Estimated Weight:</strong> {completingBooking.quantity} kg</p>
@@ -1917,7 +2114,7 @@ const CentreDashboard: React.FC = () => {
                       value={weightBrought}
                       onChange={(e) => setWeightBrought(e.target.value)}
                       placeholder="e.g. 2100"
-                      className="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      className="block w-full rounded-xl border border-slate-300 px-3 py-3 text-base sm:text-sm min-h-[44px] focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
 
@@ -1930,7 +2127,7 @@ const CentreDashboard: React.FC = () => {
                       value={weightAccepted}
                       onChange={(e) => setWeightAccepted(e.target.value)}
                       placeholder="e.g. 2000"
-                      className="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      className="block w-full rounded-xl border border-slate-300 px-3 py-3 text-base sm:text-sm min-h-[44px] focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
 
@@ -1943,7 +2140,7 @@ const CentreDashboard: React.FC = () => {
                       value={ratePerKg}
                       onChange={(e) => setRatePerKg(e.target.value)}
                       placeholder="e.g. 22.75"
-                      className="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      className="block w-full rounded-xl border border-slate-300 px-3 py-3 text-base sm:text-sm min-h-[44px] focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
 
@@ -1953,7 +2150,7 @@ const CentreDashboard: React.FC = () => {
                       value={procurementNote}
                       onChange={(e) => setProcurementNote(e.target.value)}
                       placeholder="Staff comments, deductions context, etc."
-                      className="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      className="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                       rows={2}
                     />
                   </div>
@@ -1979,14 +2176,14 @@ const CentreDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCloseModal}
-                      className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 font-bold rounded-xl text-xs transition-colors"
+                      className="flex-1 py-3 min-h-[44px] border border-slate-200 hover:bg-slate-50 font-bold rounded-xl text-sm transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition-colors"
+                      className="flex-1 py-3 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-colors cursor-pointer"
                     >
                       {loading ? 'Processing...' : 'Certify Dropoff'}
                     </button>
@@ -2000,10 +2197,10 @@ const CentreDashboard: React.FC = () => {
 
       {/* Scanner Modal */}
       {isScannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[80vh] sm:h-auto max-h-[800px]">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[85vh] max-h-[700px] my-auto">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base">
                 <Camera className="w-5 h-5 text-indigo-600" />
                 Scan Token QR Code
               </h3>
@@ -2012,24 +2209,25 @@ const CentreDashboard: React.FC = () => {
                   setIsScannerOpen(false);
                   setScanError(null);
                 }}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                aria-label="Close scanner"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6 flex-1 flex flex-col">
-              <p className="text-sm text-slate-500 mb-4 text-center">
+            <div className="p-4 sm:p-6 flex-1 flex flex-col overflow-y-auto">
+              <p className="text-xs sm:text-sm text-slate-500 mb-3 text-center">
                 Point your camera at the farmer's token QR code. Make sure you are using a secure connection (HTTPS) for camera access.
               </p>
               
               {scanError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
+                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm flex items-start gap-2">
                   <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                   <span>{scanError}</span>
                 </div>
               )}
               
-              <div className="relative rounded-xl overflow-hidden bg-black flex-1 min-h-[300px] border border-slate-200 shadow-inner">
+              <div className="relative rounded-xl overflow-hidden bg-black flex-1 min-h-[260px] border border-slate-200 shadow-inner">
                 <Scanner 
                   onScan={handleScan}
                   onError={(err: any) => setScanError(err?.message || 'Camera error. Please ensure camera permissions are granted.')}
@@ -2048,9 +2246,9 @@ const CentreDashboard: React.FC = () => {
 
       {/* FIX 2: Payment Correction Modal */}
       {correctionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" role="dialog" aria-modal="true">
-            <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-orange-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden max-h-[90vh] flex flex-col my-auto" role="dialog" aria-modal="true">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center gap-3 bg-orange-50 shrink-0">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Pencil className="w-4 h-4 text-orange-600" />
               </div>
@@ -2059,13 +2257,13 @@ const CentreDashboard: React.FC = () => {
                 <p className="text-xs text-orange-700 mt-0.5">This is a corrective override — an audit log will be created.</p>
               </div>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Set Correct Status To</label>
                 <select
                   value={correctionStatus}
                   onChange={(e) => setCorrectionStatus(e.target.value)}
-                  className="w-full rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-sm font-bold text-orange-800 focus:ring-2 focus:ring-orange-300 focus:outline-none"
+                  className="w-full rounded-xl border border-orange-200 bg-orange-50 px-3 py-3 min-h-[44px] text-base sm:text-sm font-bold text-orange-800 focus:ring-2 focus:ring-orange-300 focus:outline-none cursor-pointer"
                 >
                   <option value="pending">Pending</option>
                   <option value="initiated">Initiated</option>
@@ -2079,22 +2277,22 @@ const CentreDashboard: React.FC = () => {
                   value={correctionReason}
                   onChange={(e) => setCorrectionReason(e.target.value)}
                   placeholder="e.g. Payment was credited but system showed wrong status due to bank delay"
-                  className="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                  className="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
                   rows={3}
                 />
               </div>
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2 shrink-0">
               <button
                 onClick={() => { setCorrectionModal(null); setCorrectionReason(''); }}
-                className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-100 font-bold rounded-xl text-xs transition-colors"
+                className="flex-1 py-3 min-h-[44px] border border-slate-200 hover:bg-slate-100 font-bold rounded-xl text-sm transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCorrectionSubmit}
                 disabled={!correctionReason.trim() || loading}
-                className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-md transition-colors"
+                className="flex-1 py-3 min-h-[44px] bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm shadow-md transition-colors cursor-pointer"
               >
                 {loading ? 'Saving...' : 'Save Correction'}
               </button>

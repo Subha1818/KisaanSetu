@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sprout, Building2, Shield, LogIn, UserPlus, Globe, Menu, X, LogOut, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
+import { FirstVisitLanguageModal } from './FirstVisitLanguageModal';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -76,6 +77,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const changeLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lng = e.target.value;
+    localStorage.setItem('kisaansetu_lang_selected', 'true');
+    localStorage.setItem('i18nextLng', lng);
     i18n.changeLanguage(lng);
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
@@ -96,15 +99,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
+      {/* First-visit Language Selection Popup */}
+      <FirstVisitLanguageModal />
+
       {/* Header */}
-      <header className="sticky top-4 z-50 mx-4 sm:mx-6 lg:mx-auto w-[96%] max-w-[90rem]">
-        <div className={`px-4 sm:px-6 lg:px-8 transition-all duration-500 ease-out ${isMobileMenuOpen ? 'rounded-3xl' : 'rounded-full'} ${isScrolled || isMobileMenuOpen
+      <header className="sticky top-3 sm:top-4 z-50 w-[calc(100%-1rem)] sm:w-[96%] max-w-[90rem] mx-auto">
+        <div className={`px-3 sm:px-6 lg:px-8 transition-all duration-500 ease-out ${isMobileMenuOpen ? 'rounded-3xl' : 'rounded-full'} ${isScrolled || isMobileMenuOpen
             ? 'bg-amber-100/95 backdrop-blur-md border-2 border-amber-400/80 shadow-md shadow-amber-900/10'
             : 'bg-emerald-50/90 backdrop-blur-md border-2 border-emerald-200/80 shadow-sm shadow-emerald-900/5'
           }`}>
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/" className="flex items-center gap-2 group shrink-0">
               <div className="p-2 bg-emerald-600 rounded-xl text-white group-hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-600/20">
                 <Sprout className="w-6 h-6" />
               </div>
@@ -190,14 +196,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button & Mobile Language Selector with 44px+ tap targets */}
             <div className="md:hidden flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-white/80 border border-slate-200 rounded-xl px-2 py-1 mr-2 shadow-sm">
-                <Globe className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center gap-1.5 bg-white/90 border border-slate-200 rounded-xl px-2.5 h-11 shadow-sm">
+                <Globe className="w-4 h-4 text-emerald-600 shrink-0" />
                 <select
                   value={i18n.language}
                   onChange={changeLanguage}
-                  className="bg-transparent border-none text-xs font-semibold text-slate-700 focus:ring-0 cursor-pointer pl-1 pr-6 py-1"
+                  aria-label="Select Language"
+                  className="bg-transparent border-none text-xs sm:text-sm font-semibold text-slate-700 focus:ring-0 cursor-pointer pl-0.5 pr-6 py-0 h-full"
                 >
                   <option value="en">English</option>
                   <option value="hi">हिन्दी</option>
@@ -210,7 +217,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                className="w-11 h-11 rounded-xl text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/80 flex items-center justify-center transition-colors shrink-0"
                 aria-label="Toggle Menu"
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -229,9 +236,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${isActive
                       ? 'bg-white text-emerald-800 shadow-sm border-2 border-emerald-400'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-slate-600 hover:bg-slate-50 active:bg-slate-100'
                       }`}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
@@ -247,7 +254,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     setIsLogoutModalOpen(true);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-red-600 hover:bg-red-50"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-red-600 hover:bg-red-50 min-h-[48px]"
                 >
                   <LogOut className="w-5 h-5" />
                   {t('layout.logout')}
@@ -260,7 +267,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${item.path === '/register'
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${item.path === '/register'
                         ? 'bg-slate-900 text-white mt-2'
                         : isActive
                           ? 'bg-emerald-50 text-emerald-700'
@@ -279,32 +286,32 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className={`flex-1 w-full ${location.pathname === '/' ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}`}>
+      <main className={`flex-1 w-full ${location.pathname === '/' ? '' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8'}`}>
         {children}
       </main>
 
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-5 sm:p-6 overflow-y-auto">
               <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 text-center mb-2">{t('layout.confirm_logout')}</h3>
               <p className="text-slate-500 text-center text-sm mb-6">{t('layout.logout_confirm_msg')}</p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setIsLogoutModalOpen(false)}
                   disabled={isLoggingOut}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                  className="flex-1 py-3 min-h-[44px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
                 >
                   {t('layout.cancel')}
                 </button>
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
-                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md shadow-red-600/20"
+                  className="flex-1 py-3 min-h-[44px] bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md shadow-red-600/20 text-sm"
                 >
                   {isLoggingOut ? t('layout.logging_out') : t('layout.confirm_logout')}
                 </button>
