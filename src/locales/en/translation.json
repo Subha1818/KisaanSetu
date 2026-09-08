@@ -113,6 +113,7 @@
     "select_slot": "Select Dropoff Date Slot",
     "no_slots": "No open scheduling calendar dates available.",
     "booked_fraction": "{{booked}} / {{total}} booked",
+    "est_slot": "Est. slot: {{start}} – {{end}}",
     "full": "Full",
     "open": "Open",
     "proceed_summary": "Proceed to Weight Summary",

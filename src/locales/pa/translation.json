@@ -113,6 +113,7 @@
     "select_slot": "ਮਿਤੀ ਸਲਾਟ ਚੁਣੋ",
     "no_slots": "ਕੋਈ ਖੁੱਲ੍ਹੀਆਂ ਕੈਲੰਡਰ ਮਿਤੀਆਂ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।",
     "booked_fraction": "{{booked}} / {{total}} ਬੁੱਕ ਹੋਏ",
+    "est_slot": "ਅੰਦਾਜ਼ਨ ਸਲਾਟ: {{start}} – {{end}}",
     "full": "ਭਰ ਗਿਆ",
     "open": "ਉਪਲਬਧ",
     "proceed_summary": "ਵੇਰਵੇ ਦੇ ਸੰਖੇਪ ਵੱਲ ਵਧੋ",

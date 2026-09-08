@@ -38,6 +38,8 @@ interface Centre {
   latitude?: number;
   longitude?: number;
   distanceKm?: number;
+  opening_time?: string;
+  avg_minutes_per_farmer?: number;
 }
 
 interface Product {
@@ -99,6 +101,7 @@ const BookAppointment: React.FC = () => {
   const [arrivalWindow, setArrivalWindow] = useState<{ earliestTime: string; latestTime: string } | null>(null);
   const [peopleAheadCount, setPeopleAheadCount] = useState<number>(0);
   const [centreOpeningTime, setCentreOpeningTime] = useState<string>('');
+  const [centreAvgPace, setCentreAvgPace] = useState<number>(10);
 
   // Fetch session at mount
   useEffect(() => {
@@ -151,13 +154,42 @@ const BookAppointment: React.FC = () => {
     fetchCentres();
   }, [selectedBlockCode]);
 
-  // Fetch products and dates for selected centre
+  // Fetch products and dates for selected centre, with realtime slot updates
   useEffect(() => {
+    let isMounted = true;
+    let channel: any = null;
+
     const fetchCentreDetails = async () => {
       if (!selectedCentre) return;
       try {
         setLoading(true);
         setError(null);
+
+        // Operational time and pace
+        const opTime = selectedCentre.opening_time || '08:00:00';
+        if (isMounted) {
+          setCentreOpeningTime(opTime.substring(0, 5));
+        }
+
+        // Fetch centre historical average processing pace
+        try {
+          const { data: paceData } = await supabase.rpc('get_centre_avg_processing_time', {
+            p_centre_id: selectedCentre.id
+          });
+          if (isMounted) {
+            if (typeof paceData === 'number' && paceData > 0) {
+              setCentreAvgPace(paceData);
+            } else if (selectedCentre.avg_minutes_per_farmer) {
+              setCentreAvgPace(selectedCentre.avg_minutes_per_farmer);
+            } else {
+              setCentreAvgPace(10);
+            }
+          }
+        } catch {
+          if (isMounted) {
+            setCentreAvgPace(selectedCentre.avg_minutes_per_farmer || 10);
+          }
+        }
 
         // Query Products
         const { data: prodData, error: prodErr } = await supabase
@@ -166,7 +198,7 @@ const BookAppointment: React.FC = () => {
           .eq('centre_id', selectedCentre.id);
 
         if (prodErr) throw new Error(prodErr.message);
-        setProducts(prodData || []);
+        if (isMounted) setProducts(prodData || []);
 
         // Query Slots (dates in future or today, filter out closed)
         const now = new Date();
@@ -182,20 +214,75 @@ const BookAppointment: React.FC = () => {
         if (dateErr) throw new Error(dateErr.message);
         // Ensure no expired dates in the past are ever presented as bookable
         const validDates = (dateData || []).filter(d => d.date >= localTodayStr && d.status !== 'closed');
-        setDates(validDates);
-
-        // Clear previous steps selections
-        setSelectedProduct(null);
-        setSelectedDate(null);
-        setQuantity('');
+        if (isMounted) {
+          setDates(validDates);
+          // Clear previous steps selections
+          setSelectedProduct(null);
+          setSelectedDate(null);
+          setQuantity('');
+        }
       } catch (err: any) {
         console.error('Error fetching centre details:', err);
-        setError(err.message || 'Failed to retrieve crop/slots for this centre.');
+        if (isMounted) {
+          setError(err.message || 'Failed to retrieve crop/slots for this centre.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
     fetchCentreDetails();
+
+    // Subscribe to realtime updates on booking_dates for dynamic slot counts & est. arrival updates
+    if (selectedCentre) {
+      channel = supabase
+        .channel(`booking-dates-${selectedCentre.id}-${Math.random().toString(36).substring(7)}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'booking_dates',
+            filter: `centre_id=eq.${selectedCentre.id}`,
+          },
+          (payload) => {
+            if (payload.eventType === 'UPDATE' && payload.new) {
+              const updatedSlot = payload.new as BookingDate;
+              setDates(prevDates =>
+                prevDates.map(d => (d.id === updatedSlot.id ? { ...d, ...updatedSlot } : d))
+              );
+              setSelectedDate(prevSelected =>
+                prevSelected?.id === updatedSlot.id ? { ...prevSelected, ...updatedSlot } : prevSelected
+              );
+            } else if (payload.eventType === 'INSERT' && payload.new) {
+              const newSlot = payload.new as BookingDate;
+              const now = new Date();
+              const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+              if (newSlot.date >= localTodayStr && newSlot.status !== 'closed') {
+                setDates(prevDates => {
+                  if (prevDates.some(d => d.id === newSlot.id)) return prevDates;
+                  const updated = [...prevDates, newSlot];
+                  updated.sort((a, b) => a.date.localeCompare(b.date));
+                  return updated;
+                });
+              }
+            } else if (payload.eventType === 'DELETE' && payload.old) {
+              setDates(prevDates => prevDates.filter(d => d.id !== payload.old.id));
+              setSelectedDate(prevSelected => (prevSelected?.id === payload.old.id ? null : prevSelected));
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [selectedCentre]);
 
   // Haversine formula for distance
@@ -866,6 +953,11 @@ const BookAppointment: React.FC = () => {
                       });
                       const isSelected = selectedDate?.id === dateSlot.id;
 
+                      const opTime = selectedCentre?.opening_time || (centreOpeningTime ? `${centreOpeningTime}:00` : '08:00:00');
+                      const slotWindow = !isFull
+                        ? calculateArrivalWindow(opTime, centreAvgPace, dateSlot.booked_count, dateSlot.date)
+                        : null;
+
                       return (
                         <button
                           key={dateSlot.id}
@@ -886,6 +978,18 @@ const BookAppointment: React.FC = () => {
                             <span className="text-xs text-slate-500 block mt-0.5 font-medium">
                               {t('booking.booked_fraction', { booked: dateSlot.booked_count, total: dateSlot.capacity })}
                             </span>
+                            {slotWindow && (
+                              <div className="flex items-center gap-1.5 text-xs text-amber-700 font-medium mt-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <span>
+                                  {t('booking.est_slot', {
+                                    start: slotWindow.earliestTime,
+                                    end: slotWindow.latestTime,
+                                    defaultValue: `Est. slot: ${slotWindow.earliestTime} – ${slotWindow.latestTime}`
+                                  })}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div>
                             {isFull ? (
@@ -949,6 +1053,21 @@ const BookAppointment: React.FC = () => {
                         year: 'numeric'
                       })}
                     </span>
+                    {(() => {
+                      const opTime = selectedCentre?.opening_time || (centreOpeningTime ? `${centreOpeningTime}:00` : '08:00:00');
+                      const window = calculateArrivalWindow(opTime, centreAvgPace, selectedDate.booked_count, selectedDate.date);
+                      if (!window) return null;
+                      return (
+                        <span className="text-xs text-amber-700 font-semibold flex items-center gap-1 mt-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          {t('booking.est_slot', {
+                            start: window.earliestTime,
+                            end: window.latestTime,
+                            defaultValue: `Est. slot: ${window.earliestTime} – ${window.latestTime}`
+                          })}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="space-y-1 pt-2 border-t border-slate-200/50">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
