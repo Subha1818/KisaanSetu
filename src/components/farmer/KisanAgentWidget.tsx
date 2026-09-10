@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { generateTokenPDF, generateProcurementReceipt } from '../../utils/pdfGenerator';
 import { calculateArrivalWindow } from '../../utils/arrivalEstimator';
 import { NUMBER_EMOJIS, parseNumberFromText } from '../../utils/numberParser';
+import { useDraggableWidget } from '../../hooks/useDraggableWidget';
 
 interface AgentMessage {
   id: string;
@@ -2639,16 +2640,35 @@ export const KisanAgentWidget: React.FC = () => {
 
   const currentLang = (i18n.language || 'hi').split('-')[0].toLowerCase();
   const dict = AGENT_I18N[currentLang] || AGENT_I18N['en'] || AGENT_I18N['hi'];
+  const { nodeRef, position, isDragging, handlers } = useDraggableWidget('kisan_agent_capsule_pos');
 
   return (
     <>
-      {/* AGENT FLOATING ACTION BUTTON */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {!isOpen ? (
+      {/* AGENT FLOATING ACTION BUTTON (DRAGGABLE CAPSULE) */}
+      {!isOpen && (
+        <div
+          ref={nodeRef}
+          {...handlers}
+          style={
+            position
+              ? { left: `${position.x}px`, top: `${position.y}px`, touchAction: 'none' }
+              : { right: '1.5rem', bottom: '1.5rem', touchAction: 'none' }
+          }
+          className="fixed z-50 select-none cursor-grab active:cursor-grabbing"
+          title="Drag to move anywhere, click to open"
+        >
           <button
-            onClick={() => setIsOpen(true)}
+            type="button"
+            onClick={(e) => {
+              if (isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+              }
+              setIsOpen(true);
+            }}
             aria-label="Open Kisaan Saathi AI Assistant"
-            className="group flex items-center gap-3 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white px-5 py-3.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 ring-4 ring-emerald-400/30 cursor-pointer"
+            className="group flex items-center gap-3 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white px-5 py-3.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200 ring-4 ring-emerald-400/30 cursor-pointer pointer-events-auto"
           >
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-xs">
@@ -2666,8 +2686,8 @@ export const KisanAgentWidget: React.FC = () => {
               </div>
             </div>
           </button>
-        ) : null}
-      </div>
+        </div>
+      )}
 
       {/* AGENT MODAL / DRAWER PANEL */}
       {isOpen && (

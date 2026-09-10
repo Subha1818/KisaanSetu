@@ -223,7 +223,7 @@ interface Product {
 
 
 const CentreDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'queue' | 'all_bookings' | 'settings' | 'payouts'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'analytics' | 'all_bookings' | 'settings' | 'payouts'>('queue');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -1267,6 +1267,17 @@ const CentreDashboard: React.FC = () => {
           Queue Console
         </button>
         <button
+          onClick={() => setActiveTab('analytics')}
+          className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
+            activeTab === 'analytics'
+              ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+              : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <BarChart2 className="w-4 h-4" />
+          Analytics & Charts
+        </button>
+        <button
           onClick={() => setActiveTab('all_bookings')}
           className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
             activeTab === 'all_bookings'
@@ -1342,190 +1353,6 @@ const CentreDashboard: React.FC = () => {
               <span className="text-xs text-indigo-700 font-extrabold uppercase">Serving Token</span>
               <p className="text-2xl font-black text-indigo-900 mt-1">{currentToken}</p>
             </div>
-          </div>
-
-          {/* VISUAL ANALYTICS & INTAKE PERFORMANCE CHARTS */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Chart 1: 7-Day Procurement Trend (Area Chart) */}
-            <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-600" />
-                    7-Day Procurement & Payout Trend
-                  </h3>
-                  <p className="text-xs text-slate-400">Daily intake volume (kg) and total staff payouts</p>
-                </div>
-                <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                  Live Sync
-                </span>
-              </div>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={get7DayProcurementData()} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0.0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPayout" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
-                      formatter={(value: any, name: any) => [
-                        name === 'volumeKg' ? `${Number(value).toLocaleString('en-IN')} kg` : `₹${Number(value).toLocaleString('en-IN')}`,
-                        name === 'volumeKg' ? 'Crop Intake' : 'Payout'
-                      ]}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-                    <Area type="monotone" dataKey="volumeKg" name="Crop Intake (kg)" stroke="#6366F1" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
-                    <Area type="monotone" dataKey="totalPayout" name="Payout (₹)" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" fillOpacity={1} fill="url(#colorPayout)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Chart 2: Crop Distribution Share (Pie Chart) */}
-            <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                    <PieChartIcon className="w-5 h-5 text-indigo-600" />
-                    Crop Intake Share
-                  </h3>
-                  <span className="text-xs text-slate-400 font-semibold">By Volume</span>
-                </div>
-                <p className="text-xs text-slate-400 mb-2">Breakdown of crop varieties arriving at depot</p>
-                <div className="h-48 w-full relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={getCropBreakdownData()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {getCropBreakdownData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                        formatter={(val: any) => [`${Number(val).toLocaleString('en-IN')} kg`, 'Intake']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
-                {getCropBreakdownData().map((c, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-xs">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
-                    <span className="text-slate-600 font-medium truncate">{c.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-          {/* Chart 3 & 4: Queue Status Breakdown BarChart + Capacity Utilization Meter */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Bar Chart: Queue Status Breakdown */}
-            <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                    <BarChart2 className="w-5 h-5 text-indigo-600" />
-                    Today's Queue Distribution
-                  </h3>
-                  <p className="text-xs text-slate-400">Token status distribution across gate workflow</p>
-                </div>
-                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
-                  {totalToday} Total Tokens
-                </span>
-              </div>
-              <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={getQueueStatusData()} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="status" stroke="#94A3B8" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} allowDecimals={false} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
-                    />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                      {getQueueStatusData().map((entry, index) => (
-                        <Cell key={`bar-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Capacity Utilization Progress Meter */}
-            <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-indigo-600" />
-                    Depot Capacity Gauge
-                  </h3>
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                    {dailyCapacity} Farmers/Day
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mb-4">Real-time daily intake quota utilization</p>
-
-                {(() => {
-                  const currentUtil = Math.min(100, Math.round((totalToday / (dailyCapacity || 50)) * 100));
-                  return (
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                          <span>Farmer Slots Used</span>
-                          <span className="text-indigo-600">{totalToday} / {dailyCapacity} ({currentUtil}%)</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-500 ${
-                              currentUtil > 90 ? 'bg-rose-500' : currentUtil > 70 ? 'bg-amber-500' : 'bg-indigo-600'
-                            }`}
-                            style={{ width: `${currentUtil}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-2">
-                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Accepted Intake</span>
-                          <span className="text-sm font-black text-emerald-600">
-                            {procurements.reduce((acc, curr) => acc + Number(curr.quantity_accepted || 0), 0).toLocaleString('en-IN')} kg
-                          </span>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Paid Out</span>
-                          <span className="text-sm font-black text-indigo-600">
-                            ₹{procurements.reduce((acc, curr) => acc + (Number(curr.quantity_accepted || 0) * Number(curr.rate_per_kg || 0)), 0).toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
           </div>
 
           {/* Queue Actions Controller */}
@@ -1781,8 +1608,212 @@ const CentreDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: PAYOUTS MANAGEMENT */}
-      {/* TAB 2: ALL BOOKINGS */}
+      {/* TAB: ANALYTICS & CHARTS */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-white rounded-2xl border-2 border-indigo-100 p-5 sm:p-6 shadow-sm shadow-indigo-900/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-indigo-600" />
+                Depot Analytics & Charts
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                Visual insights into daily crop intake trends, payout volume, queue distribution, and depot capacity utilization.
+              </p>
+            </div>
+            <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
+              Live Depot Telemetry
+            </span>
+          </div>
+
+          {/* VISUAL ANALYTICS & INTAKE PERFORMANCE CHARTS */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Chart 1: 7-Day Procurement Trend (Area Chart) */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-indigo-600" />
+                    7-Day Procurement & Payout Trend
+                  </h3>
+                  <p className="text-xs text-slate-400">Daily intake volume (kg) and total staff payouts</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  Live Sync
+                </span>
+              </div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={get7DayProcurementData()} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0.0}/>
+                      </linearGradient>
+                      <linearGradient id="colorPayout" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
+                      formatter={(value: any, name: any) => [
+                        name === 'volumeKg' ? `${Number(value).toLocaleString('en-IN')} kg` : `₹${Number(value).toLocaleString('en-IN')}`,
+                        name === 'volumeKg' ? 'Crop Intake' : 'Payout'
+                      ]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+                    <Area type="monotone" dataKey="volumeKg" name="Crop Intake (kg)" stroke="#6366F1" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+                    <Area type="monotone" dataKey="totalPayout" name="Payout (₹)" stroke="#10B981" strokeWidth={2} strokeDasharray="3 3" fillOpacity={1} fill="url(#colorPayout)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Chart 2: Crop Distribution Share (Pie Chart) */}
+            <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                    <PieChartIcon className="w-5 h-5 text-indigo-600" />
+                    Crop Intake Share
+                  </h3>
+                  <span className="text-xs text-slate-400 font-semibold">By Volume</span>
+                </div>
+                <p className="text-xs text-slate-400 mb-2">Breakdown of crop varieties arriving at depot</p>
+                <div className="h-48 w-full relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={getCropBreakdownData()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {getCropBreakdownData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                        formatter={(val: any) => [`${Number(val).toLocaleString('en-IN')} kg`, 'Intake']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
+                {getCropBreakdownData().map((c, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-xs">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                    <span className="text-slate-600 font-medium truncate">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Chart 3 & 4: Queue Status Breakdown BarChart + Capacity Utilization Meter */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Bar Chart: Queue Status Breakdown */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                    <BarChart2 className="w-5 h-5 text-indigo-600" />
+                    Today's Queue Distribution
+                  </h3>
+                  <p className="text-xs text-slate-400">Token status distribution across gate workflow</p>
+                </div>
+                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
+                  {totalToday} Total Tokens
+                </span>
+              </div>
+              <div className="h-44 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={getQueueStatusData()} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="status" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} allowDecimals={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
+                    />
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                      {getQueueStatusData().map((entry, index) => (
+                        <Cell key={`bar-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Capacity Utilization Progress Meter */}
+            <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 hover:border-indigo-200 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-indigo-600" />
+                    Depot Capacity Gauge
+                  </h3>
+                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                    {dailyCapacity} Farmers/Day
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-4">Real-time daily intake quota utilization</p>
+
+                {(() => {
+                  const currentUtil = Math.min(100, Math.round((totalToday / (dailyCapacity || 50)) * 100));
+                  return (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                          <span>Farmer Slots Used</span>
+                          <span className="text-indigo-600">{totalToday} / {dailyCapacity} ({currentUtil}%)</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-500 ${
+                              currentUtil > 90 ? 'bg-rose-500' : currentUtil > 70 ? 'bg-amber-500' : 'bg-indigo-600'
+                            }`}
+                            style={{ width: `${currentUtil}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Accepted Intake</span>
+                          <span className="text-sm font-black text-emerald-600">
+                            {procurements.reduce((acc, curr) => acc + Number(curr.quantity_accepted || 0), 0).toLocaleString('en-IN')} kg
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Paid Out</span>
+                          <span className="text-sm font-black text-indigo-600">
+                            ₹{procurements.reduce((acc, curr) => acc + (Number(curr.quantity_accepted || 0) * Number(curr.rate_per_kg || 0)), 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* TAB: ALL BOOKINGS */}
       {activeTab === 'all_bookings' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border-2 border-indigo-100 p-6 shadow-sm shadow-indigo-900/5 transition-all duration-300">

@@ -29,9 +29,8 @@ const Login: React.FC = () => {
     }
 
     try {
-      const internalEmail = `${formattedPhone.replace('+', '')}@farmerapp.internal`;
-
       // 1. Sign in with Supabase Auth
+      const internalEmail = `${formattedPhone.replace('+', '')}@farmerapp.internal`;
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: internalEmail,
         password: password,
@@ -153,12 +152,6 @@ const Login: React.FC = () => {
 
           <div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans">{t('auth.sign_in')}</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {t('auth.or')} {' '}
-              <Link to="/register" className="font-semibold text-emerald-600 hover:text-emerald-500 hover:underline">
-                {t('auth.register_new')}
-              </Link>
-            </p>
           </div>
 
           {error && (
@@ -225,6 +218,16 @@ const Login: React.FC = () => {
                 )}
               </button>
             </div>
+
+            <p className="text-center text-sm text-slate-600">
+              {t('auth.no_account', "Don't have an account?")}{' '}
+              <Link
+                to="/register"
+                className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline transition-colors"
+              >
+                {t('auth.create_account', 'Create an account')}
+              </Link>
+            </p>
           </form>
         </div>
       </div>

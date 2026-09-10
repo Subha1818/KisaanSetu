@@ -530,15 +530,15 @@ const BookAppointment: React.FC = () => {
 
       {/* Progress Stepper Banner */}
       {step < 5 && (
-        <div className="bg-white rounded-2xl border border-emerald-200/90 p-4 sm:p-6 shadow-sm shadow-emerald-950/5 space-y-4 sm:space-y-5">
+        <div className="bg-white rounded-2xl border border-emerald-200/80 p-4 sm:p-6 shadow-sm shadow-emerald-950/5 space-y-4 sm:space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase font-extrabold tracking-wider text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 shadow-xs">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/80">
                   {t('booking.step_of', { step })} • {t('booking.in_progress')}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1.5 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 mt-2 tracking-tight">
                 {step === 1 && t('booking.step_1_title')}
                 {step === 2 && t('booking.step_2_title')}
                 {step === 3 && t('booking.step_3_title')}
@@ -564,15 +564,15 @@ const BookAppointment: React.FC = () => {
                         }`} />
                     )}
                     <div className="flex flex-col items-center gap-1">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${isDone
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${isDone
                           ? 'bg-emerald-600 text-white shadow-sm'
                           : isCurrent
-                            ? 'bg-amber-500 text-white ring-4 ring-amber-100 shadow-sm font-extrabold'
+                            ? 'bg-amber-500 text-white ring-4 ring-amber-100 shadow-sm font-semibold'
                             : 'bg-slate-100 text-slate-400 border border-slate-200'
                         }`}>
-                        {isDone ? <Check className="w-4 h-4 stroke-[3]" /> : <Icon className="w-3.5 h-3.5" />}
+                        {isDone ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Icon className="w-3.5 h-3.5" />}
                       </div>
-                      <span className={`text-[10px] font-bold tracking-tight hidden sm:block ${isDone ? 'text-emerald-700' : isCurrent ? 'text-amber-700 font-extrabold' : 'text-slate-400'
+                      <span className={`text-[11px] font-medium tracking-normal hidden sm:block ${isDone ? 'text-emerald-700 font-semibold' : isCurrent ? 'text-amber-800 font-semibold' : 'text-slate-500'
                         }`}>
                         {s.label}
                       </span>

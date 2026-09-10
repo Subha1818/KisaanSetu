@@ -13,6 +13,7 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 import { parseNumberFromText } from '../../utils/numberParser';
+import { useDraggableWidget } from '../../hooks/useDraggableWidget';
 
 interface StaffAgentMessage {
   id: string;
@@ -1055,16 +1056,35 @@ export const CentreAgentWidget: React.FC = () => {
 
   const currentLang = (i18n.language || 'hi').split('-')[0].toLowerCase();
   const dict = CENTRE_AGENT_I18N[currentLang] || CENTRE_AGENT_I18N['en'] || CENTRE_AGENT_I18N['hi'];
+  const { nodeRef, position, isDragging, handlers } = useDraggableWidget('centre_agent_capsule_pos');
 
   return (
     <>
-      {/* FAB FOR CENTRE STAFF AGENT */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {!isOpen && (
+      {/* FAB FOR CENTRE STAFF AGENT (DRAGGABLE CAPSULE) */}
+      {!isOpen && (
+        <div
+          ref={nodeRef}
+          {...handlers}
+          style={
+            position
+              ? { left: `${position.x}px`, top: `${position.y}px`, touchAction: 'none' }
+              : { right: '1.5rem', bottom: '1.5rem', touchAction: 'none' }
+          }
+          className="fixed z-50 select-none cursor-grab active:cursor-grabbing"
+          title="Drag to move anywhere, click to open"
+        >
           <button
-            onClick={() => setIsOpen(true)}
+            type="button"
+            onClick={(e) => {
+              if (isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+              }
+              setIsOpen(true);
+            }}
             aria-label="Open Centre Staff Assistant AI"
-            className="flex items-center gap-3 bg-gradient-to-r from-indigo-700 via-indigo-800 to-blue-900 text-white px-5 py-3.5 rounded-full shadow-xl hover:scale-105 transition-all duration-300 ring-4 ring-indigo-400/30 cursor-pointer"
+            className="flex items-center gap-3 bg-gradient-to-r from-indigo-700 via-indigo-800 to-blue-900 text-white px-5 py-3.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200 ring-4 ring-indigo-400/30 cursor-pointer pointer-events-auto"
           >
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-xs">
               <Building2 className="w-6 h-6 text-amber-300 animate-pulse" />
@@ -1079,8 +1099,8 @@ export const CentreAgentWidget: React.FC = () => {
               </div>
             </div>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* DRAWER MODAL FOR STAFF AGENT */}
       {isOpen && (
