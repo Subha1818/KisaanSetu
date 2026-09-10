@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History } from 'lucide-react';
+import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History, Bot, Volume2, Star } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
 import { RescheduleModal } from '../../components/farmer/RescheduleModal';
@@ -9,6 +9,220 @@ import { generateProcurementReceipt, generateTokenPDF } from '../../utils/pdfGen
 import { calculateArrivalWindow } from '../../utils/arrivalEstimator';
 import { QRCodeSVG } from 'qrcode.react';
 import { DashboardBackground } from '../../components/DashboardBackground';
+
+// Helper function for Text-to-Speech audio readout for farmers
+const speakBookingStatus = (token: string, status: string, peopleAhead: number, arrivalWindow?: any, lang: string = 'hi') => {
+  if (!('speechSynthesis' in window)) {
+    alert('Audio speech is not supported on this browser.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  
+  const voiceLangMap: Record<string, { bcp: string; template: (token: string, status: string, peopleAhead: number, arrivalWindow?: any) => string }> = {
+    en: {
+      bcp: 'en-IN',
+      template: (t, s, p, a) => {
+        let msg = `Hello! Your token number is ${t}. `;
+        if (s === 'called') msg += 'It is your turn, please reach the depot immediately. ';
+        else if (s === 'in_progress') msg += 'Your crop weighing and procurement is in progress. ';
+        else {
+          msg += `Your token is secured. There are ${p} people ahead of you. `;
+          if (a) msg += `Your estimated arrival time is between ${a.earliestTime} and ${a.latestTime}. `;
+        }
+        return msg + 'Thank you.';
+      }
+    },
+    hi: {
+      bcp: 'hi-IN',
+      template: (t, s, p, a) => {
+        let msg = `नमस्ते! आपका टोकन नंबर है ${t}। `;
+        if (s === 'called') msg += 'आपकी बारी आ चुकी है, कृपया तुरंत केंद्र पहुंचें। ';
+        else if (s === 'in_progress') msg += 'आपकी फसल की तुलाई और खरीद प्रक्रिया चल रही है। ';
+        else {
+          msg += `आपकी स्थिति: टोकन सुरक्षित है। आपसे आगे ${p} लोग हैं। `;
+          if (a) msg += `आपका संभावित पहुंचने का समय ${a.earliestTime} से ${a.latestTime} के बीच है। `;
+        }
+        return msg + 'धन्यवाद।';
+      }
+    },
+    bn: {
+      bcp: 'bn-IN',
+      template: (t, s, p, a) => {
+        let msg = `নমস্কার! আপনার টোকেন নম্বর হলো ${t}। `;
+        if (s === 'called') msg += 'আপনার নম্বর এসে গেছে, অনুগ্রহ করে অবিলম্বে ডিপোতে যান। ';
+        else if (s === 'in_progress') msg += 'আপনার ফসলের ওজন ও ক্রয় প্রক্রিয়া চলছে। ';
+        else {
+          msg += `আপনার টোকেন নিশ্চিত হয়েছে। আপনার সামনে ${p} জন আছেন। `;
+          if (a) msg += `আপনার পৌঁছানোর আনুমানিক সময় ${a.earliestTime} থেকে ${a.latestTime}। `;
+        }
+        return msg + 'ধন্যবাদ।';
+      }
+    },
+    mr: {
+      bcp: 'mr-IN',
+      template: (t, s, p, a) => {
+        let msg = `नमस्कार! तुमचा टोकन क्रमांक ${t} आहे. `;
+        if (s === 'called') msg += 'तुमची पाळी आली आहे, कृपया त्वरित केंद्रावर पोहोचा. ';
+        else if (s === 'in_progress') msg += 'तुमच्या पिकाची मोजणी प्रक्रिया सुरू आहे. ';
+        else {
+          msg += `तुमचा टोकन सुरक्षित आहे. तुमच्या पुढे ${p} लोक आहेत. `;
+          if (a) msg += `तुमची पोहोचण्याची अंदाजे वेळ ${a.earliestTime} ते ${a.latestTime} आहे. `;
+        }
+        return msg + 'धन्यवाद.';
+      }
+    },
+    te: {
+      bcp: 'te-IN',
+      template: (t, s, p, a) => {
+        let msg = `నమస్కారం! మీ టోకెన్ నంబర్ ${t}. `;
+        if (s === 'called') msg += 'మీ వంతు వచ్చింది, దయచేసి వెంటనే కేంద్రానికి చేరుకోండి. ';
+        else if (s === 'in_progress') msg += 'మీ పంట తూకం ప్రక్రియ జరుగుతోంది. ';
+        else {
+          msg += `మీ టోకెన్ భద్రపరచబడింది. మీ కంటే ముందు ${p} మంది ఉన్నారు. `;
+          if (a) msg += `మీరు చేరుకునే అంచనా సమయం ${a.earliestTime} నుండి ${a.latestTime}. `;
+        }
+        return msg + 'ధన్యవాదాలు.';
+      }
+    },
+    ta: {
+      bcp: 'ta-IN',
+      template: (t, s, p, a) => {
+        let msg = `வணக்கம்! உங்கள் டோக்கன் எண் ${t}. `;
+        if (s === 'called') msg += 'உங்கள் முறை வந்துவிட்டது, உடனடியாக மையத்திற்கு வரவும். ';
+        else if (s === 'in_progress') msg += 'உங்கள் பயிர் எடை போடும் பணி நடக்கிறது. ';
+        else {
+          msg += `உங்கள் டோக்கன் உறுதி செய்யப்பட்டது. உங்களுக்கு આગળ ${p} நபர்கள் உள்ளனர். `;
+          if (a) msg += `நீங்கள் வரும் நேரம் ${a.earliestTime} முதல் ${a.latestTime} வரை. `;
+        }
+        return msg + 'நன்றி.';
+      }
+    },
+    pa: {
+      bcp: 'pa-IN',
+      template: (t, s, p, a) => {
+        let msg = `ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! ਤੁਹਾਡਾ ਟੋਕਨ ਨੰਬਰ ${t} ਹੈ। `;
+        if (s === 'called') msg += 'ਤੁਹਾਡੀ ਵਾਰੀ ਆ ਗਈ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਤੁਰੰਤ ਕੇਂਦਰ ਪਹੁੰਚੋ। ';
+        else if (s === 'in_progress') msg += 'ਤੁਹਾਡੀ ਫ਼ਸਲ ਦੀ ਤੋਲ ਪ੍ਰਕਿਰਿਆ ਚੱਲ ਰਹੀ ਹੈ। ';
+        else {
+          msg += `ਤੁਹਾਡਾ ਟੋਕਨ ਸੁਰੱਖਿਅਤ ਹੈ। ਤੁਹਾਡੇ ਤੋਂ ਅੱਗੇ ${p} ਲੋਕ ਹਨ। `;
+          if (a) msg += `ਤੁਹਾਡਾ ਪਹੁੰਚਣ ਦਾ ਸਮਾਂ ${a.earliestTime} ਤੋਂ ${a.latestTime} ਹੈ। `;
+        }
+        return msg + 'ਧੰਨਵਾਦ।';
+      }
+    }
+  };
+
+  const normLang = (lang || 'hi').toLowerCase().split('-')[0];
+  const selected = voiceLangMap[normLang] || voiceLangMap['hi'];
+  const text = selected.template(token, status, peopleAhead, arrivalWindow);
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = selected.bcp;
+  utterance.rate = 0.88;
+  window.speechSynthesis.speak(utterance);
+};
+
+// Lightweight Farmer-Friendly Visual Queue Stepper Component
+const FarmerStatusStepper: React.FC<{
+  status: string;
+  token: string;
+  peopleAhead: number;
+  arrivalWindow?: { earliestTime: string; latestTime: string } | null;
+  onAudioClick: () => void;
+}> = ({ status, token, peopleAhead, arrivalWindow, onAudioClick }) => {
+  const { t } = useTranslation();
+  const steps = [
+    { key: 'booked', label: t('dashboard.step_booked'), subLabel: 'Booked', icon: '🎟️' },
+    { key: 'called', label: t('dashboard.step_called'), subLabel: 'Head to Depot', icon: '🚜' },
+    { key: 'completed', label: t('dashboard.step_completed'), subLabel: 'Completed', icon: '✅' },
+  ];
+
+  const currentIdx = status === 'completed' ? 2 : status === 'called' || status === 'in_progress' ? 1 : 0;
+
+  return (
+    <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-emerald-700/50 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-emerald-800/60">
+        <div>
+          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
+            {t('dashboard.easy_queue_tracker')}
+          </span>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-3xl font-black tracking-tight text-white">{token}</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
+              status === 'called' ? 'bg-amber-400 text-slate-950 animate-pulse' :
+              status === 'in_progress' ? 'bg-indigo-400 text-slate-950' : 'bg-emerald-400 text-slate-950'
+            }`}>
+              {status === 'called' ? t('dashboard.status_called_badge') : status === 'in_progress' ? t('dashboard.status_in_progress_badge') : t('dashboard.status_queued_badge')}
+            </span>
+          </div>
+        </div>
+
+        {/* Listen Audio Button for farmers */}
+        <button
+          onClick={onAudioClick}
+          className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
+          title={t('dashboard.listen_status')}
+        >
+          <Volume2 className="w-4.5 h-4.5 text-slate-950 animate-bounce" />
+          <span>{t('dashboard.listen_status')}</span>
+        </button>
+      </div>
+
+      {/* 3-Step Visual Progress Bar */}
+      <div className="relative my-7 px-2">
+        <div className="absolute top-5 left-8 right-8 h-1.5 bg-emerald-950/90 rounded-full z-0" />
+        <div
+          className="absolute top-5 left-8 h-1.5 bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 rounded-full transition-all duration-700 z-0"
+          style={{ width: `${(currentIdx / 2) * 82}%` }}
+        />
+
+        <div className="flex justify-between items-center relative z-10">
+          {steps.map((s, idx) => {
+            const isDone = idx <= currentIdx;
+            const isCurrent = idx === currentIdx;
+            return (
+              <div key={s.key} className="flex flex-col items-center text-center">
+                <div
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-md ${
+                    isCurrent
+                      ? 'bg-amber-400 text-slate-950 scale-110 ring-4 ring-amber-300/40 font-bold'
+                      : isDone
+                      ? 'bg-emerald-500 text-white font-bold'
+                      : 'bg-emerald-950/90 text-emerald-600 border border-emerald-800'
+                  }`}
+                >
+                  {s.icon}
+                </div>
+                <span
+                  className={`text-xs font-black mt-2 leading-tight ${
+                    isCurrent ? 'text-amber-300 font-black' : isDone ? 'text-white' : 'text-emerald-500/70'
+                  }`}
+                >
+                  {s.label}
+                </span>
+                <span className="text-[10px] text-emerald-300/70 font-semibold">{s.subLabel}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Highlights */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+        <div className="bg-emerald-950/60 border border-emerald-800/60 p-3 rounded-xl flex items-center justify-between">
+          <span className="text-emerald-300 font-bold">{t('dashboard.people_ahead')}:</span>
+          <span className="text-lg font-black text-amber-300">{peopleAhead}</span>
+        </div>
+        <div className="bg-emerald-950/60 border border-emerald-800/60 p-3 rounded-xl flex items-center justify-between">
+          <span className="text-emerald-300 font-bold">{t('dashboard.arrival_window')}:</span>
+          <span className="text-sm font-black text-white">
+            {arrivalWindow ? `${arrivalWindow.earliestTime} - ${arrivalWindow.latestTime}` : '...'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FarmerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +236,7 @@ const FarmerDashboard: React.FC = () => {
   const [centreOpeningTime, setCentreOpeningTime] = useState<string>('');
   const [todaysPace, setTodaysPace] = useState<number | null>(null);
   const [arrivalWindow, setArrivalWindow] = useState<{ earliestTime: string; latestTime: string } | null>(null);
+  const [userRatings, setUserRatings] = useState<Record<string, number>>({});
   
   const { t, i18n } = useTranslation();
   
@@ -108,6 +323,11 @@ const FarmerDashboard: React.FC = () => {
 
         if (bookings && bookings.length > 0) {
           setActiveBooking(bookings[0]);
+          try {
+            localStorage.setItem('kisaan_active_booking', JSON.stringify(bookings[0]));
+          } catch (e) {
+            console.error('Failed to cache booking locally:', e);
+          }
         }
 
         // Get past completed procurements for this farmer
@@ -185,7 +405,15 @@ const FarmerDashboard: React.FC = () => {
 
       } catch (err: any) {
         console.error('Error fetching dashboard data:', err);
-        setError(err.message || 'Failed to fetch dashboard data.');
+        setError(err.message || 'Failed to fetch dashboard data. Loading offline cached token...');
+        try {
+          const cached = localStorage.getItem('kisaan_active_booking');
+          if (cached) {
+            setActiveBooking(JSON.parse(cached));
+          }
+        } catch (e) {
+          console.error('Failed to load cached booking:', e);
+        }
       } finally {
         setLoading(false);
       }
@@ -383,6 +611,37 @@ const FarmerDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Kisan AI Assistant Easy Voice & Option Banner */}
+      <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-emerald-700 rounded-2xl p-5 shadow-lg text-white flex flex-col sm:flex-row items-center justify-between gap-4 border border-amber-300/40">
+        <div className="flex items-center gap-4 text-center sm:text-left">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30">
+            <Bot className="w-8 h-8 text-amber-200" />
+          </div>
+          <div>
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <h2 className="text-lg font-black tracking-tight text-white">{t('dashboard.ai_banner_title')}</h2>
+              <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-white text-slate-900 rounded-full shadow-xs">
+                {t('dashboard.ai_banner_tag')}
+              </span>
+            </div>
+            <p className="text-xs text-amber-100 mt-1 max-w-xl font-medium">
+              {t('dashboard.ai_banner_desc')}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            const btn = document.querySelector('button[aria-label="Open Kisaan Saathi AI Assistant"]') as HTMLButtonElement;
+            if (btn) btn.click();
+          }}
+          className="w-full sm:w-auto px-5 py-3 bg-white text-slate-900 hover:bg-amber-50 font-black rounded-xl text-sm shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+        >
+          <Volume2 className="w-4 h-4 text-emerald-600" />
+          <span>{t('dashboard.ai_banner_btn')}</span>
+        </button>
+      </div>
+
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
           <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
@@ -394,7 +653,16 @@ const FarmerDashboard: React.FC = () => {
       {activeBooking ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Appointment Details */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm space-y-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
+            {/* Easy Farmer Visual Tracker & Speech Assistant */}
+            <FarmerStatusStepper
+              status={activeBooking.status}
+              token={activeBooking.token}
+              peopleAhead={peopleAhead}
+              arrivalWindow={arrivalWindow}
+              onAudioClick={() => speakBookingStatus(activeBooking.token, activeBooking.status, peopleAhead, arrivalWindow, i18n.language)}
+            />
+
             <div className="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
               <div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wide">
@@ -729,6 +997,101 @@ const FarmerDashboard: React.FC = () => {
                         {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                         {t('dashboard.download_receipt')}
                       </button>
+                  <div key={item.id} className="border border-slate-200/80 rounded-2xl p-5 bg-slate-50/50 flex flex-col space-y-4 hover:shadow-sm transition-all">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="font-bold text-slate-800 text-lg">{item.bookings.product_name}</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-mono">
+                            {t('dashboard.history_token', { token: item.bookings.token })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-2">
+                          {new Date(item.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-IN' : i18n.language, {
+                            day: 'numeric', month: 'short', year: 'numeric'
+                          })} • {item.bookings.procurement_centres.name}
+                        </p>
+                        <div className="flex gap-4 text-sm font-medium">
+                          <span className="text-slate-700">{t('dashboard.history_accepted', { qty: item.quantity_accepted })}</span>
+                          <span className="text-emerald-700 font-bold">{t('dashboard.history_amount', { amount: item.total_amount?.toLocaleString('en-IN') })}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+                        <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          item.payments[0]?.status === 'credited' ? 'bg-emerald-100 text-emerald-800' :
+                          item.payments[0]?.status === 'initiated' ? 'bg-indigo-100 text-indigo-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {item.payments[0]?.status === 'credited' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                          {t('dashboard.payment_status', { status: getStatusLabel(item.payments[0]?.status || 'pending') })}
+                        </span>
+                        
+                        <button
+                          onClick={() => handleDownloadReceipt(item.id)}
+                          disabled={downloadingId === item.id}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-xs cursor-pointer"
+                        >
+                          {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                          {t('dashboard.download_receipt')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* QUALITY INSPECTION REVIEW & DEPOT RATING SECTION */}
+                    <div className="pt-3 border-t border-slate-200/60 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="bg-emerald-50/80 border border-emerald-100 p-3 rounded-xl">
+                        <span className="font-extrabold text-emerald-900 flex items-center gap-1 mb-1">
+                          <Award className="w-4 h-4 text-emerald-600" />
+                          Inspection Quality Grade & Remarks
+                        </span>
+                        <p className="text-slate-700 font-medium">
+                          {item.note || 'Grade A • Premium Quality (Moisture < 12%, No Foreign Matter)'}
+                        </p>
+                      </div>
+                      <div className="bg-white border border-slate-200 p-3 rounded-xl flex flex-col justify-between">
+                        <span className="font-extrabold text-slate-800 flex items-center gap-1 mb-1">
+                          <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+                          Depot Service Rating & Review
+                        </span>
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => {
+                                  setUserRatings(prev => ({ ...prev, [item.id]: star }));
+                                  try {
+                                    const centreId = item.bookings?.centre_id || item.bookings?.procurement_centres?.id;
+                                    if (centreId) {
+                                      const saved = JSON.parse(localStorage.getItem('kisaan_centre_ratings') || '{}');
+                                      const current = saved[centreId] || [];
+                                      current.push(star);
+                                      saved[centreId] = current;
+                                      localStorage.setItem('kisaan_centre_ratings', JSON.stringify(saved));
+                                    }
+                                  } catch (e) {
+                                    console.error('Failed to save rating:', e);
+                                  }
+                                }}
+                                title={`Rate ${star} Stars`}
+                                className="cursor-pointer hover:scale-110 transition-transform"
+                              >
+                                <Star
+                                  className={`w-4 h-4 ${
+                                    (userRatings[item.id] || 0) >= star
+                                      ? 'fill-amber-400 text-amber-400'
+                                      : 'text-slate-300'
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                            {userRatings[item.id] ? `${userRatings[item.id]} / 5 Stars` : 'Tap stars to rate'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

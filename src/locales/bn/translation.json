@@ -82,7 +82,20 @@
     "status_called": "ডাকা হয়েছে",
     "status_in_progress": "চলমান",
     "status_completed": "সম্পন্ন",
-    "status_cancelled": "বাতিল"
+    "status_cancelled": "বাতিল",
+    "ai_banner_title": "কিশান সাথী AI সহকারী (Voice & Options)",
+    "ai_banner_tag": "সহজ মোড",
+    "ai_banner_desc": "সহজ সহায়তার জন্য: কথা বলুন বা বোতাম টিপে টোকেন বুক করুন, লাইনের অবস্থা দেখুন, এমএসপি দর জানুন এবং রশিদ ডাউনলোড করুন।",
+    "ai_banner_btn": "সহকারী খুলুন (Open AI Agent)",
+    "easy_queue_tracker": "সহজ কাতার ট্র্যাকার",
+    "status_called_badge": "ডাক এসেছে (Called!)",
+    "status_in_progress_badge": "ওজন চলছে",
+    "status_queued_badge": "কাতারে আছে (Queued)",
+    "step_booked": "টোকেন নিশ্চিত",
+    "step_called": "ডিপোতে যান",
+    "step_completed": "ওজন সম্পন্ন",
+    "arrival_window": "পৌঁছানোর সময়",
+    "listen_status": "অডিও শুনুন"
   },
   "booking": {
     "back_dashboard": "বাতিল করুন এবং ড্যাশবোর্ডে ফিরে যান",

@@ -82,7 +82,20 @@
     "status_called": "बोलावले",
     "status_in_progress": "प्रगतीपथावर",
     "status_completed": "पूर्ण",
-    "status_cancelled": "रद्द केले"
+    "status_cancelled": "रद्द केले",
+    "ai_banner_title": "किसान साथी AI सहाय्यक (Voice & Options)",
+    "ai_banner_tag": "सुलभ मोड",
+    "ai_banner_desc": "सुलभ मदतीसाठी: बोला किंवा बटण दाबून टोकन बुक करा, रांगेची स्थिती पहा, एमएसपी भाव जाणून घ्या आणि पावती डाउनलोड करा.",
+    "ai_banner_btn": "सहाय्यक उघडा (Open AI Agent)",
+    "easy_queue_tracker": "सुलभ रांग ट्रॅकर",
+    "status_called_badge": "पाचारण केले (Called!)",
+    "status_in_progress_badge": "मोजणी सुरू आहे",
+    "status_queued_badge": "रांगेत (Queued)",
+    "step_booked": "टोकन सुरक्षित",
+    "step_called": "केंद्रावर जा",
+    "step_completed": "मोजणी पूर्ण",
+    "arrival_window": "पोहोचण्याची वेळ",
+    "listen_status": "बोलून ऐका"
   },
   "booking": {
     "back_dashboard": "रद्द करा आणि डॅशबोर्डवर परत जा",

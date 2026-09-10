@@ -82,7 +82,20 @@
     "status_called": "Called",
     "status_in_progress": "In Progress",
     "status_completed": "Completed",
-    "status_cancelled": "Cancelled"
+    "status_cancelled": "Cancelled",
+    "ai_banner_title": "Kisaan Saathi AI Assistant (Voice & Options)",
+    "ai_banner_tag": "Easy Mode",
+    "ai_banner_desc": "For quick access & assistance: Speak or tap large buttons to book tokens, check queue status, view MSP prices, and download receipts.",
+    "ai_banner_btn": "Open AI Agent",
+    "easy_queue_tracker": "Easy Visual Queue Tracker",
+    "status_called_badge": "Turn Arrived (Called!)",
+    "status_in_progress_badge": "Weighing in Progress",
+    "status_queued_badge": "In Queue",
+    "step_booked": "Token Secured",
+    "step_called": "Head to Depot",
+    "step_completed": "Weighing Completed",
+    "arrival_window": "Arrival Window",
+    "listen_status": "Listen Status"
   },
   "booking": {
     "back_dashboard": "Cancel and back to Dashboard",
