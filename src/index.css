@@ -19,3 +19,10 @@ button, [role="button"] {
 button:disabled, [role="button"][aria-disabled="true"] {
   cursor: not-allowed;
 }
+
+/* Performance utility for long lists on low-end 3G devices */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 120px;
+}
+

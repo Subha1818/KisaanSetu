@@ -348,6 +348,7 @@ const getCentreFlowI18n = (lang: string) => {
 export const CentreAgentWidget: React.FC = () => {
   const { i18n } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [, setLangTick] = useState(0);
 
   const [isOpen, setIsOpen] = useState(false);
   const [staffName, setStaffName] = useState('Staff');
@@ -410,6 +411,24 @@ export const CentreAgentWidget: React.FC = () => {
   useEffect(() => {
     fetchCentreInfo();
   }, []);
+
+  // Subscribe directly to i18n languageChanged events to keep AI agent 100% in sync with website language
+  useEffect(() => {
+    const handleLanguageChange = (newLng: string) => {
+      setLangTick((prev) => prev + 1);
+      prevLangRef.current = newLng;
+      stopSpeaking();
+      setMessages([]);
+      if (isOpen) {
+        showRootMenu();
+      }
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n, isOpen, staffName]);
 
   // Monitor i18n language changes and refresh agent messages instantly in current language
   useEffect(() => {

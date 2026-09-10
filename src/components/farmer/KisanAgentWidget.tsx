@@ -774,6 +774,7 @@ export const KisanAgentWidget: React.FC = () => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [, setLangTick] = useState(0);
 
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<any>(null);
@@ -836,7 +837,26 @@ export const KisanAgentWidget: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Monitor i18n language changes or farmerName update and refresh agent messages instantly
+  // Subscribe directly to i18n languageChanged events to keep AI agent 100% in sync with website language
+  useEffect(() => {
+    const handleLanguageChange = (newLng: string) => {
+      setLangTick((prev) => prev + 1);
+      prevLangRef.current = newLng;
+      stopSpeaking();
+      setMessages([]);
+      setBookingState({ step: 'root' });
+      if (isOpen) {
+        showRootMenu();
+      }
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n, isOpen, farmerName]);
+
+  // Monitor i18n language changes or farmerName update when opening widget
   useEffect(() => {
     if (isOpen) {
       if (prevLangRef.current !== i18n.language || messages.length === 0) {
