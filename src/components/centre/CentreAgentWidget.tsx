@@ -1056,7 +1056,7 @@ export const CentreAgentWidget: React.FC = () => {
 
   const currentLang = (i18n.language || 'hi').split('-')[0].toLowerCase();
   const dict = CENTRE_AGENT_I18N[currentLang] || CENTRE_AGENT_I18N['en'] || CENTRE_AGENT_I18N['hi'];
-  const { nodeRef, position, isDragging, handlers } = useDraggableWidget('centre_agent_capsule_pos');
+  const { nodeRef, position, isDragging, handlers } = useDraggableWidget('centre_agent_capsule_pos', () => setIsOpen(true));
 
   return (
     <>
@@ -1076,12 +1076,10 @@ export const CentreAgentWidget: React.FC = () => {
           <button
             type="button"
             onClick={(e) => {
-              if (isDragging) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
+              e.stopPropagation();
+              if (!isDragging) {
+                setIsOpen(true);
               }
-              setIsOpen(true);
             }}
             aria-label="Open Centre Staff Assistant AI"
             className="flex items-center gap-3 bg-gradient-to-r from-indigo-700 via-indigo-800 to-blue-900 text-white px-5 py-3.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200 ring-4 ring-indigo-400/30 cursor-pointer pointer-events-auto"

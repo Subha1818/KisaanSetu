@@ -2640,7 +2640,7 @@ export const KisanAgentWidget: React.FC = () => {
 
   const currentLang = (i18n.language || 'hi').split('-')[0].toLowerCase();
   const dict = AGENT_I18N[currentLang] || AGENT_I18N['en'] || AGENT_I18N['hi'];
-  const { nodeRef, position, isDragging, handlers } = useDraggableWidget('kisan_agent_capsule_pos');
+  const { nodeRef, position, isDragging, handlers } = useDraggableWidget('kisan_agent_capsule_pos', () => setIsOpen(true));
 
   return (
     <>
@@ -2660,12 +2660,10 @@ export const KisanAgentWidget: React.FC = () => {
           <button
             type="button"
             onClick={(e) => {
-              if (isDragging) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
+              e.stopPropagation();
+              if (!isDragging) {
+                setIsOpen(true);
               }
-              setIsOpen(true);
             }}
             aria-label="Open Kisaan Saathi AI Assistant"
             className="group flex items-center gap-3 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white px-5 py-3.5 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200 ring-4 ring-emerald-400/30 cursor-pointer pointer-events-auto"

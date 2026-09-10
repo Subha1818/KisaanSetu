@@ -5,7 +5,10 @@ interface Position {
   y: number;
 }
 
-export function useDraggableWidget(storageKey: string = 'kisaan_agent_widget_pos') {
+export function useDraggableWidget(
+  storageKey: string = 'kisaan_agent_widget_pos',
+  onClickCallback?: () => void
+) {
   const [position, setPosition] = useState<Position | null>(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -27,6 +30,8 @@ export function useDraggableWidget(storageKey: string = 'kisaan_agent_widget_pos
     origY: number;
     hasMoved: boolean;
     active: boolean;
+    targetEl: HTMLElement | null;
+    pointerId: number | null;
   }>({
     startX: 0,
     startY: 0,
@@ -34,6 +39,8 @@ export function useDraggableWidget(storageKey: string = 'kisaan_agent_widget_pos
     origY: 0,
     hasMoved: false,
     active: false,
+    targetEl: null,
+    pointerId: null,
   });
 
   const nodeRef = useRef<HTMLDivElement | null>(null);
@@ -75,11 +82,9 @@ export function useDraggableWidget(storageKey: string = 'kisaan_agent_widget_pos
       origY: rect.top,
       hasMoved: false,
       active: true,
+      targetEl: e.currentTarget as HTMLElement,
+      pointerId: e.pointerId,
     };
-
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    } catch (_) {}
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -89,10 +94,14 @@ export function useDraggableWidget(storageKey: string = 'kisaan_agent_widget_pos
     const deltaY = e.clientY - dragRef.current.startY;
     const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    if (dist > 5) {
+    if (dist > 6) {
       if (!dragRef.current.hasMoved) {
         dragRef.current.hasMoved = true;
         setIsDragging(true);
+        // Only capture pointer once actual movement is confirmed
+        try {
+          dragRef.current.targetEl?.setPointerCapture?.(e.pointerId);
+        } catch (_) {}
       }
 
       const rect = nodeRef.current.getBoundingClientRect();
@@ -104,27 +113,36 @@ export function useDraggableWidget(storageKey: string = 'kisaan_agent_widget_pos
     }
   }, [clampPosition]);
 
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
+  const onPointerUp = useCallback((_e: React.PointerEvent) => {
     if (!dragRef.current.active) return;
 
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-    } catch (_) {}
+    const wasMoved = dragRef.current.hasMoved;
+    const target = dragRef.current.targetEl;
+    const pId = dragRef.current.pointerId;
 
-    const wasDragging = dragRef.current.hasMoved;
-    dragRef.current.active = false;
-
-    // Small delay to allow click event suppression
-    setTimeout(() => {
-      setIsDragging(false);
-    }, 50);
-
-    if (wasDragging && position) {
+    if (wasMoved && pId !== null) {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(position));
+        target?.releasePointerCapture?.(pId);
       } catch (_) {}
     }
-  }, [position, storageKey]);
+
+    dragRef.current.active = false;
+
+    if (!wasMoved) {
+      // Direct click / tap!
+      onClickCallback?.();
+    } else {
+      setTimeout(() => {
+        setIsDragging(false);
+      }, 50);
+
+      if (position) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(position));
+        } catch (_) {}
+      }
+    }
+  }, [position, storageKey, onClickCallback]);
 
   return {
     nodeRef,
