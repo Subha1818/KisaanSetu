@@ -960,43 +960,6 @@ const FarmerDashboard: React.FC = () => {
             {procurementHistory.length > 0 ? (
               <div className="space-y-4">
                 {procurementHistory.map((item) => (
-                  <div key={item.id} className="border border-slate-100 rounded-xl p-4 sm:p-5 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-1 w-full">
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
-                        <span className="font-bold text-slate-800 text-base sm:text-lg">{item.bookings.product_name}</span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
-                          {t('dashboard.history_token', { token: item.bookings.token })}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-slate-500 mb-2">
-                        {new Date(item.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-IN' : i18n.language, {
-                          day: 'numeric', month: 'short', year: 'numeric'
-                        })} • {item.bookings.procurement_centres.name}
-                      </p>
-                      <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
-                        <span className="text-slate-700">{t('dashboard.history_accepted', { qty: item.quantity_accepted })}</span>
-                        <span className="text-emerald-700 font-bold">{t('dashboard.history_amount', { amount: item.total_amount?.toLocaleString('en-IN') })}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2.5 w-full md:w-auto mt-2 md:mt-0">
-                      <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${
-                        item.payments[0]?.status === 'credited' ? 'bg-emerald-100 text-emerald-800' :
-                        item.payments[0]?.status === 'initiated' ? 'bg-indigo-100 text-indigo-800' :
-                        'bg-amber-100 text-amber-800'
-                      }`}>
-                        {item.payments[0]?.status === 'credited' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                        {t('dashboard.payment_status', { status: getStatusLabel(item.payments[0]?.status || 'pending') })}
-                      </span>
-                      
-                      <button
-                        onClick={() => handleDownloadReceipt(item.id)}
-                        disabled={downloadingId === item.id}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-xl transition-colors text-sm cursor-pointer"
-                      >
-                        {downloadingId === item.id ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        {t('dashboard.download_receipt')}
-                      </button>
                   <div key={item.id} className="border border-slate-200/80 rounded-2xl p-5 bg-slate-50/50 flex flex-col space-y-4 hover:shadow-sm transition-all">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div className="flex-1">
