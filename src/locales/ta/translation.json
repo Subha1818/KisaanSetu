@@ -82,20 +82,7 @@
     "status_called": "அழைக்கப்பட்டது",
     "status_in_progress": "செயலில் உள்ளது",
     "status_completed": "முடிந்தது",
-    "status_cancelled": "ரத்து செய்யப்பட்டது",
-    "ai_banner_title": "கிசான் சாதி AI உதவியாளர் (Voice & Options)",
-    "ai_banner_tag": "எளிய முறை",
-    "ai_banner_desc": "எளிய உதவிக்கு: பேசி அல்லது பொத்தான்களை அழுத்தி டோக்கன் பதிவு செய்யுங்கள், வரிசை நிலையைப் பாருங்கள், MSP விலைகளை அறியவும் மற்றும் ரசீதைப் பதிவிறக்கவும்.",
-    "ai_banner_btn": "உதவியாளரைத் திற (Open AI Agent)",
-    "easy_queue_tracker": "எளிய வரிசை கண்காணிப்பு",
-    "status_called_badge": "அழைப்பு வந்தது (Called!)",
-    "status_in_progress_badge": "எடை போடுதல் நடக்கிறது",
-    "status_queued_badge": "வரிசையில் (Queued)",
-    "step_booked": "டோக்கன் உறுதி செய்யப்பட்டது",
-    "step_called": "மையத்திற்குச் செல்லவும்",
-    "step_completed": "எடை போடுதல் முடிந்தது",
-    "arrival_window": "வரும் நேரம்",
-    "listen_status": "கேட்க"
+    "status_cancelled": "ரத்து செய்யப்பட்டது"
   },
   "booking": {
     "back_dashboard": "ரத்து செய்து டாஷ்போர்டுக்கு செல்க",

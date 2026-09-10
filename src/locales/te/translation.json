@@ -82,20 +82,7 @@
     "status_called": "పిలవబడింది",
     "status_in_progress": "పురోగతిలో ఉంది",
     "status_completed": "పూర్తయింది",
-    "status_cancelled": "రద్దు చేయబడింది",
-    "ai_banner_title": "కిసాన్ సాథీ AI సహాయకుడు (Voice & Options)",
-    "ai_banner_tag": "సులభమైన మోడ్",
-    "ai_banner_desc": "సులభమైన సహాయం కోసం: మాట్లాడండి లేదా బటన్లను నొక్కి టోకెన్ బుక్ చేయండి, క్యూ స్థితిని చూడండి, MSP ధరలను తెలుసుకోండి మరియు రసీదును డౌన్‌లోడ్ చేయండి.",
-    "ai_banner_btn": "సహాయకుడిని తెరవండి (Open AI Agent)",
-    "easy_queue_tracker": "సులభమైన క్యూ ట్రాకర్",
-    "status_called_badge": "పిలుపు వచ్చింది (Called!)",
-    "status_in_progress_badge": "తూకం జరుగుతోంది",
-    "status_queued_badge": "క్యూలో ఉంది (Queued)",
-    "step_booked": "టోకెన్ భద్రపరచబడింది",
-    "step_called": "డిపోకు వెళ్లండి",
-    "step_completed": "తూకం పూర్తయింది",
-    "arrival_window": "చేరుకునే సమయం",
-    "listen_status": "వినండి"
+    "status_cancelled": "రద్దు చేయబడింది"
   },
   "booking": {
     "back_dashboard": "రద్దు చేసి డ్యాష్‌బోర్డ్‌కు వెళ్లండి",

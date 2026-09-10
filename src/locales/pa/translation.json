@@ -82,20 +82,7 @@
     "status_called": "ਸੱਦਿਆ ਗਿਆ",
     "status_in_progress": "ਜਾਰੀ ਹੈ",
     "status_completed": "ਮੁਕੰਮਲ",
-    "status_cancelled": "ਰੱਦ ਕੀਤਾ",
-    "ai_banner_title": "ਕਿਸਾਨ ਸਾਥੀ AI ਸਹਾਇਕ (Voice & Options)",
-    "ai_banner_tag": "ਆਸਾਨ ਮੋਡ",
-    "ai_banner_desc": "ਆਸਾਨ ਮਦਦ ਲਈ: ਬੋਲੋ ਜਾਂ ਬਟਨ ਦਬਾ ਕੇ ਟੋਕਨ ਬੁੱਕ ਕਰੋ, ਕਤਾਰ ਦੀ ਸਥਿਤੀ ਦੇਖੋ, ਐਮਐਸਪੀ ਰੇਟ ਜਾਣੋ ਅਤੇ ਰਸੀਦ ਡਾਊਨਲੋਡ ਕਰੋ।",
-    "ai_banner_btn": "ਸਹਾਇਕ ਖੋਲ੍ਹੋ (Open AI Agent)",
-    "easy_queue_tracker": "ਆਸਾਨ ਕਤਾਰ ਸਥਿਤੀ",
-    "status_called_badge": "ਬੁਲਾਵਾ ਆਇਆ (Called!)",
-    "status_in_progress_badge": "ਤੋਲ ਜਾਰੀ ਹੈ",
-    "status_queued_badge": "ਕਤਾਰ ਵਿੱਚ (Queued)",
-    "step_booked": "ਟੋਕਨ ਸੁਰੱਖਿਅਤ",
-    "step_called": "ਡਿਪੂ ਪਹੁੰਚੋ",
-    "step_completed": "ਤੋਲ ਮੁਕੰਮਲ",
-    "arrival_window": "ਪਹੁੰਚਣ ਦਾ ਸਮਾਂ",
-    "listen_status": "ਸੁਣੋ"
+    "status_cancelled": "ਰੱਦ ਕੀਤਾ"
   },
   "booking": {
     "back_dashboard": "ਰੱਦ ਕਰੋ ਅਤੇ ਡੈਸ਼ਬੋਰਡ 'ਤੇ ਵਾਪਸ ਜਾਓ",

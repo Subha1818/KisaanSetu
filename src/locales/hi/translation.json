@@ -82,20 +82,7 @@
     "status_called": "बुलाया गया",
     "status_in_progress": "प्रगति पर",
     "status_completed": "पूर्ण",
-    "status_cancelled": "रद्द",
-    "ai_banner_title": "किसान साथी AI सहायक (Voice & Options)",
-    "ai_banner_tag": "आसान मोड़",
-    "ai_banner_desc": "कम साक्षरता या सहायता हेतु: बोलकर या बड़े बटन दबाकर टोकन बुक करें, कतार स्थिति देखें, एमएसपी भाव जानें और रसीद डाउनलोड करें।",
-    "ai_banner_btn": "सहायक खोलें (Open AI Agent)",
-    "easy_queue_tracker": "आसान कतार स्थिति",
-    "status_called_badge": "बुलावा आया (Called!)",
-    "status_in_progress_badge": "तुलाई जारी",
-    "status_queued_badge": "कतार में (Queued)",
-    "step_booked": "टोकन सुरक्षित",
-    "step_called": "केंद्र पहुंचे",
-    "step_completed": "तुलाई पूर्ण",
-    "arrival_window": "आगमन समय",
-    "listen_status": "बोलकर सुनें"
+    "status_cancelled": "रद्द"
   },
   "booking": {
     "back_dashboard": "रद्द करें और डैशबोर्ड पर वापस जाएं",

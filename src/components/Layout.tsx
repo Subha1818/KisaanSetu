@@ -4,8 +4,6 @@ import { Sprout, Building2, Shield, LogIn, UserPlus, Globe, Menu, X, LogOut, Ale
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 import { FirstVisitLanguageModal } from './FirstVisitLanguageModal';
-import { KisanAgentWidget } from './farmer/KisanAgentWidget';
-import { CentreAgentWidget } from './centre/CentreAgentWidget';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -323,9 +321,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       )}
 
-      {/* Scoped AI Assistant Widgets (Not shown on Landing page) */}
-      {location.pathname.startsWith('/farmer') && <KisanAgentWidget />}
-      {location.pathname.startsWith('/centre') && <CentreAgentWidget />}
     </div>
   );
 };
