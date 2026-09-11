@@ -3,7 +3,8 @@ import {
   Loader, Building, RefreshCw, AlertCircle, CheckCircle2, 
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
   Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil, X, MapPin,
-  Ticket, Wheat, Clock, BarChart2, TrendingUp, PieChart as PieChartIcon, Activity
+  Ticket, Wheat, Clock, BarChart2, TrendingUp, PieChart as PieChartIcon, Activity,
+  ShieldCheck, RotateCcw, Info
 } from 'lucide-react';
 import { 
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend 
@@ -237,11 +238,29 @@ const CentreDashboard: React.FC = () => {
   const [procurements, setProcurements] = useState<any[]>([]);
   const [showNudge, setShowNudge] = useState(false);
 
+// Baseline official MSP rates per kg (INR)
+const BASELINE_MSP_RATES: Record<string, number> = {
+  Wheat: 22.75,
+  Paddy: 21.83,
+  Maize: 20.90,
+  Mustard: 56.50,
+  Soybean: 46.00,
+  Gram: 54.40,
+  Barley: 18.50,
+  Moong: 85.58,
+  Urad: 69.50,
+  Cotton: 66.20,
+};
+
   // Modal / Form States
   const [completingBooking, setCompletingBooking] = useState<any | null>(null);
   const [weightBrought, setWeightBrought] = useState('');
   const [weightAccepted, setWeightAccepted] = useState('');
-  const [ratePerKg, setRatePerKg] = useState('22.75'); // Default wheat rate placeholder
+  const [mspRatesMap, setMspRatesMap] = useState<Record<string, number>>(BASELINE_MSP_RATES);
+  const [fixedMspRate, setFixedMspRate] = useState<number>(22.75); // Official fixed MSP for selected crop
+  const [ratePerKg, setRatePerKg] = useState('22.75');
+  const [rateDeviationCategory, setRateDeviationCategory] = useState('');
+  const [rateDeviationReason, setRateDeviationReason] = useState('');
   const [procurementNote, setProcurementNote] = useState('');
   const [completedProcurementId, setCompletedProcurementId] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -384,6 +403,26 @@ const CentreDashboard: React.FC = () => {
         .eq('centre_id', centreId);
       setProducts(prodData || []);
 
+      // 4b. Fetch Official Government MSP Rates
+      try {
+        const { data: mspData } = await supabase
+          .from('msp_rates')
+          .select('crop_name, rate_per_kg');
+        if (mspData && mspData.length > 0) {
+          const map: Record<string, number> = { ...BASELINE_MSP_RATES };
+          mspData.forEach((row: any) => {
+            if (row.crop_name && row.rate_per_kg) {
+              const val = Number(row.rate_per_kg);
+              map[row.crop_name] = val;
+              map[row.crop_name.toLowerCase()] = val;
+            }
+          });
+          setMspRatesMap(map);
+        }
+      } catch (mspErr) {
+        console.warn('Could not fetch msp_rates, using baseline:', mspErr);
+      }
+
       // 5. Fetch completed procurements for Payouts — scoped to this centre
       const { data: procData, error: procErr } = await supabase
         .from('procurements')
@@ -396,6 +435,7 @@ const CentreDashboard: React.FC = () => {
           rate_per_kg,
           total_amount,
           created_at,
+          note,
           bookings (
             product_name,
             centre_id,
@@ -766,6 +806,39 @@ const CentreDashboard: React.FC = () => {
     }
   };
 
+  // Helper to look up official government MSP for any crop
+  const getMspForCrop = (cropName?: string): number => {
+    if (!cropName) return 22.75;
+    const clean = cropName.trim();
+    if (mspRatesMap[clean]) return mspRatesMap[clean];
+    const lower = clean.toLowerCase();
+    if (mspRatesMap[lower]) return mspRatesMap[lower];
+    const matchedKey = Object.keys(mspRatesMap).find(
+      (k) => k.toLowerCase() === lower || lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower)
+    );
+    if (matchedKey) return mspRatesMap[matchedKey];
+    return 22.75;
+  };
+
+  const handleOpenCompleteModal = (booking: any) => {
+    setCompletingBooking(booking);
+    const cropMsp = getMspForCrop(booking.product_name);
+    setFixedMspRate(cropMsp);
+    setRatePerKg(cropMsp.toString());
+    setRateDeviationCategory('');
+    setRateDeviationReason('');
+    setProcurementNote('');
+    setCompletedProcurementId(null);
+    setError(null);
+    if (booking.quantity) {
+      setWeightBrought(booking.quantity.toString());
+      setWeightAccepted(booking.quantity.toString());
+    } else {
+      setWeightBrought('');
+      setWeightAccepted('');
+    }
+  };
+
   // Submit Crop details to procurements + payments
   const handleRecordWeighment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -792,9 +865,34 @@ const CentreDashboard: React.FC = () => {
     const rejected = Number((brought - accepted).toFixed(2));
     const rate = Number(rawRate.toFixed(2));
 
+    // Mandatory Anti-Fraud Check: If staff changed the fixed MSP rate
+    const rateDiff = Number((rate - fixedMspRate).toFixed(2));
+    const isRateModified = Math.abs(rateDiff) > 0.009;
+
+    if (isRateModified) {
+      if (!rateDeviationCategory.trim()) {
+        setError(
+          `The rate (₹${rate.toFixed(2)}/kg) differs from the official fixed MSP (₹${fixedMspRate.toFixed(2)}/kg). Please select a mandatory Reason Category for this ${rateDiff < 0 ? 'discount' : 'premium'}.`
+        );
+        return;
+      }
+      if (!rateDeviationReason.trim() || rateDeviationReason.trim().length < 5) {
+        setError(
+          `Mandatory Anti-Fraud Policy: A specific explanation (at least 5 characters) is strictly required when modifying the official MSP rate from ₹${fixedMspRate.toFixed(2)}/kg to ₹${rate.toFixed(2)}/kg.`
+        );
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError(null);
+
+      // Construct comprehensive audit note if rate deviated
+      const deviationAudit = isRateModified
+        ? `[RATE DEVIATION AUDIT: Official MSP ₹${fixedMspRate.toFixed(2)}/kg -> Applied ₹${rate.toFixed(2)}/kg (${rateDiff > 0 ? '+' : ''}₹${rateDiff.toFixed(2)}/kg, ${((rateDiff / fixedMspRate) * 100).toFixed(1)}%). Category: ${rateDeviationCategory.trim()}. Justification: ${rateDeviationReason.trim()}]`
+        : '';
+      const finalNote = [deviationAudit, procurementNote.trim()].filter(Boolean).join('\n\n');
 
       // 1. Insert Procurement Receipt
       const { data: proc, error: procErr } = await supabase
@@ -806,7 +904,7 @@ const CentreDashboard: React.FC = () => {
           quantity_rejected: rejected,
           rate_per_kg: rate,
           recorded_by: session.user.id,
-          note: procurementNote.trim() || null
+          note: finalNote || null
         })
         .select()
         .single();
@@ -827,13 +925,17 @@ const CentreDashboard: React.FC = () => {
       // 3. Complete booking
       await supabase.from('bookings').update({ status: 'completed' }).eq('id', completingBooking.id);
 
-      // 4. Log History
+      // 4. Log History with full anti-fraud transparency
+      const historyNote = isRateModified
+        ? `Procured ${accepted} kg at ₹${rate}/kg (Rate adjusted from official MSP ₹${fixedMspRate.toFixed(2)}/kg. Reason: ${rateDeviationCategory} - ${rateDeviationReason.trim()}).`
+        : `Procured ${accepted} kg accepted weight at standard official MSP ₹${rate}/kg.`;
+
       await supabase.from('booking_history').insert({
         booking_id: completingBooking.id,
         previous_status: 'in_progress',
         new_status: 'completed',
         changed_by: session.user.id,
-        note: `Procured ${accepted} kg accepted weight at ₹${rate}/kg.`,
+        note: historyNote,
       });
 
       // Instead of closing immediately, show success view
@@ -864,6 +966,8 @@ const CentreDashboard: React.FC = () => {
     setWeightBrought('');
     setWeightAccepted('');
     setProcurementNote('');
+    setRateDeviationCategory('');
+    setRateDeviationReason('');
   };
 
   // SETTINGS UPDATES
@@ -1118,6 +1222,12 @@ const CentreDashboard: React.FC = () => {
       </div>
     );
   }
+
+  // Active weighment rate deviation helpers
+  const currentRateNumber = parseFloat(ratePerKg);
+  const rateDiffNumber = !isNaN(currentRateNumber) ? Number((currentRateNumber - fixedMspRate).toFixed(2)) : 0;
+  const isRateModified = !isNaN(currentRateNumber) && Math.abs(rateDiffNumber) > 0.009;
+  const isRateLower = rateDiffNumber < -0.009;
 
   return (
     <div className="space-y-6 relative z-0">
@@ -1424,7 +1534,7 @@ const CentreDashboard: React.FC = () => {
                       )}
                       {b.status === 'in_progress' && (
                         <button
-                          onClick={() => setCompletingBooking(b)}
+                          onClick={() => handleOpenCompleteModal(b)}
                           className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
                         >
                           <Check className="w-4 h-4" />
@@ -1512,7 +1622,7 @@ const CentreDashboard: React.FC = () => {
                             )}
                             {booking.status === 'in_progress' && (
                               <button
-                                onClick={() => setCompletingBooking(booking)}
+                                onClick={() => handleOpenCompleteModal(booking)}
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -1582,7 +1692,7 @@ const CentreDashboard: React.FC = () => {
                         )}
                         {booking.status === 'in_progress' && (
                           <button
-                            onClick={() => setCompletingBooking(booking)}
+                            onClick={() => handleOpenCompleteModal(booking)}
                             className="w-full flex-1 py-3 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
                           >
                             <Check className="w-4 h-4" />
@@ -1899,6 +2009,15 @@ const CentreDashboard: React.FC = () => {
                           <td className="py-4 px-6 font-extrabold text-slate-900">
                             ₹{parseFloat(proc.total_amount?.toString() || '0').toLocaleString('en-IN')}
                             <span className="text-[10px] text-slate-400 block font-normal mt-0.5">Rate: ₹{proc.rate_per_kg}/kg</span>
+                            {proc.note && proc.note.includes('RATE DEVIATION AUDIT') && (
+                              <span 
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5 mt-1 cursor-help" 
+                                title={proc.note}
+                              >
+                                <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />
+                                Rate Adjusted
+                              </span>
+                            )}
                           </td>
                           <td className="py-4 px-6">
                             {payRow ? (
@@ -1964,6 +2083,15 @@ const CentreDashboard: React.FC = () => {
                             ₹{parseFloat(proc.total_amount?.toString() || '0').toLocaleString('en-IN')}
                           </p>
                           <p className="text-[11px] text-slate-500 font-medium">₹{proc.rate_per_kg}/kg</p>
+                          {proc.note && proc.note.includes('RATE DEVIATION AUDIT') && (
+                            <span 
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5 mt-1 cursor-help" 
+                              title={proc.note}
+                            >
+                              <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />
+                              Rate Adjusted
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -2392,14 +2520,26 @@ const CentreDashboard: React.FC = () => {
                 </div>
               ) : (
                 <form onSubmit={handleRecordWeighment} className="space-y-4">
-                  <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl space-y-1.5 border border-slate-100 text-xs">
-                    <p><strong>Farmer:</strong> {completingBooking.users?.name}</p>
-                    <p><strong>Crop Type:</strong> {completingBooking.product_name}</p>
-                    <p><strong>Estimated Weight:</strong> {completingBooking.quantity} kg</p>
+                  {/* Farmer, Crop & Official MSP Badge */}
+                  <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 flex flex-wrap justify-between items-center gap-2 text-xs">
+                    <div>
+                      <p className="text-slate-500 font-medium">Farmer: <strong className="text-slate-800">{completingBooking.users?.name || 'Farmer'}</strong></p>
+                      <p className="text-slate-500 font-medium mt-0.5">Crop: <strong className="text-slate-800">{completingBooking.product_name || 'Produce'}</strong></p>
+                      <p className="text-slate-500 font-medium mt-0.5">Estimated Weight: <strong className="text-slate-800">{completingBooking.quantity} kg</strong></p>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-right">
+                      <span className="text-[11px] text-emerald-800 font-semibold block">Official Fixed MSP</span>
+                      <span className="text-base font-black text-emerald-700 inline-flex items-center gap-1">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        ₹{fixedMspRate.toFixed(2)} / kg
+                      </span>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Quantity Brought (kg)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Quantity Brought (kg) <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="number"
                       step="any"
@@ -2412,7 +2552,9 @@ const CentreDashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Quantity Accepted (kg)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Quantity Accepted (kg) <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="number"
                       step="any"
@@ -2425,24 +2567,131 @@ const CentreDashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Procurement Rate per kg (₹)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={ratePerKg}
-                      onChange={(e) => setRatePerKg(e.target.value)}
-                      placeholder="e.g. 22.75"
-                      className="block w-full rounded-xl border border-slate-300 px-3 py-3 text-base sm:text-sm min-h-[44px] focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                    />
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Procurement Rate per kg (₹) <span className="text-red-500">*</span>
+                      </label>
+                      {isRateModified && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRatePerKg(fixedMspRate.toFixed(2));
+                            setRateDeviationCategory('');
+                            setRateDeviationReason('');
+                          }}
+                          className="text-xs font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1 underline cursor-pointer"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Reset to Official MSP (₹{fixedMspRate.toFixed(2)})
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={ratePerKg}
+                        onChange={(e) => setRatePerKg(e.target.value)}
+                        placeholder={`Official MSP: ${fixedMspRate.toFixed(2)}`}
+                        className={`block w-full rounded-xl border px-3 py-3 text-base sm:text-sm min-h-[44px] focus:outline-none transition-all ${
+                          isRateModified
+                            ? isRateLower
+                              ? 'border-amber-400 bg-amber-50/40 text-amber-950 font-semibold focus:ring-2 focus:ring-amber-500'
+                              : 'border-blue-400 bg-blue-50/40 text-blue-950 font-semibold focus:ring-2 focus:ring-blue-500'
+                            : 'border-slate-300 focus:ring-1 focus:ring-indigo-500'
+                        }`}
+                      />
+                      {!isRateModified && (
+                        <span className="absolute right-3 top-3 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md pointer-events-none">
+                          Fixed MSP
+                        </span>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Mandatory Anti-Fraud Rate Deviation Justification */}
+                  {isRateModified && (
+                    <div className={`p-4 rounded-xl border space-y-3 transition-all ${
+                      isRateLower 
+                        ? 'bg-amber-50/95 border-amber-300 text-amber-950 shadow-sm shadow-amber-900/5' 
+                        : 'bg-blue-50/95 border-blue-300 text-blue-950 shadow-sm shadow-blue-900/5'
+                    }`}>
+                      <div className="flex items-start gap-2.5">
+                        <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${isRateLower ? 'text-amber-600' : 'text-blue-600'}`} />
+                        <div>
+                          <h4 className="font-bold text-xs sm:text-sm">
+                            {isRateLower ? 'Rate Below Official MSP (Mandatory Reason Required)' : 'Rate Above Official MSP (Mandatory Reason Required)'}
+                          </h4>
+                          <p className="text-xs mt-0.5 opacity-90 leading-relaxed">
+                            Applied rate differs from official fixed MSP (₹{fixedMspRate.toFixed(2)}/kg) by{' '}
+                            <strong>{rateDiffNumber > 0 ? '+' : ''}₹{rateDiffNumber.toFixed(2)}/kg</strong> ({Math.abs((rateDiffNumber / fixedMspRate) * 100).toFixed(1)}%).
+                            To prevent fraud or unauthorized rate changes, you must provide a verifiable reason.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold mb-1 text-slate-800">
+                          Reason Category <span className="text-red-600">*</span>
+                        </label>
+                        <select
+                          value={rateDeviationCategory}
+                          onChange={(e) => setRateDeviationCategory(e.target.value)}
+                          required
+                          className="w-full bg-white rounded-xl border border-slate-300 px-3 py-2.5 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        >
+                          <option value="">-- Select Reason Category --</option>
+                          {isRateLower ? (
+                            <>
+                              <option value="High Moisture Content">High Moisture Content (&gt;14% FAQ norm)</option>
+                              <option value="Foreign Matter / Impurities">Foreign Matter / Inert Dust / Impurities (&gt;2%)</option>
+                              <option value="Damaged / Discolored Grains">Damaged, Weeviled, or Discolored Kernels</option>
+                              <option value="Shriveled / Immature Grains">Shriveled &amp; Immature Grain Discount</option>
+                              <option value="Substandard FAQ Grade">Produce below Fair Average Quality (FAQ) Grade</option>
+                              <option value="Other Quality Deduction">Other Mutual Quality Deduction</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Premium Export Variety">Premium Quality / Sharbati / Export Grade</option>
+                              <option value="Certified Organic Produce">Certified Organic / Zero-Chemical Crop</option>
+                              <option value="Extra Dry Moisture Bonus">Extremely Low Moisture (&lt;10%) High Keeping Quality</option>
+                              <option value="State / District Bonus">Special Government / Cooperative Incentive Bonus</option>
+                              <option value="Other Certified Premium">Other Certified Quality Premium</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold mb-1 text-slate-800">
+                          Detailed Justification <span className="text-red-600">*</span>
+                        </label>
+                        <textarea
+                          value={rateDeviationReason}
+                          onChange={(e) => setRateDeviationReason(e.target.value)}
+                          required
+                          placeholder={isRateLower 
+                            ? "e.g., Moisture tested at 16.2% on digital moisture meter; 50 paise deduction mutually agreed as per Mandi FAQ norms."
+                            : "e.g., Sharbati A-grade variety certified by Quality Inspector."
+                          }
+                          className="w-full bg-white rounded-xl border border-slate-300 px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          rows={2}
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                          <Info className="w-3 h-3 text-slate-400 shrink-0" />
+                          This justification is permanently logged for audit review and printed on the farmer receipt.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Note (Optional)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Additional Staff Notes (Optional)</label>
                     <textarea
                       value={procurementNote}
                       onChange={(e) => setProcurementNote(e.target.value)}
-                      placeholder="Staff comments, deductions context, etc."
+                      placeholder="General notes, vehicle number, bag count, etc."
                       className="block w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                       rows={2}
                     />
@@ -2450,17 +2699,25 @@ const CentreDashboard: React.FC = () => {
 
                   {/* Auto Calculated payout summary */}
                   {weightAccepted && ratePerKg && !isNaN(parseFloat(weightAccepted)) && !isNaN(parseFloat(ratePerKg)) && (
-                    <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-100 flex justify-between items-center text-xs">
-                      <div>
-                        <span className="block font-medium">MSP Payout Amount</span>
-                        <span className="font-extrabold text-sm block">
-                          ₹{(parseFloat(weightAccepted) * parseFloat(ratePerKg)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="block text-[10px]">
-                          Rejected: {Math.max(0, Number((parseFloat(weightBrought || '0') - parseFloat(weightAccepted || '0')).toFixed(2))) || 0} kg
-                        </span>
+                    <div className="p-3.5 bg-emerald-50 text-emerald-900 rounded-xl border border-emerald-200/80 space-y-1.5 text-xs">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="block font-medium text-slate-600">Calculated Payout Amount</span>
+                          <span className="font-extrabold text-base sm:text-lg text-emerald-700 block">
+                            ₹{(parseFloat(weightAccepted) * parseFloat(ratePerKg)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[11px] text-slate-500">
+                            Rejected: <strong className="text-slate-800">{Math.max(0, Number((parseFloat(weightBrought || '0') - parseFloat(weightAccepted || '0')).toFixed(2))) || 0} kg</strong>
+                          </span>
+                          {isRateModified && (
+                            <span className={`block font-bold text-[11px] mt-0.5 ${isRateLower ? 'text-amber-700' : 'text-blue-700'}`}>
+                              {isRateLower ? 'Diff vs MSP: -₹' : 'Bonus vs MSP: +₹'}
+                              {Math.abs(rateDiffNumber * parseFloat(weightAccepted)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
