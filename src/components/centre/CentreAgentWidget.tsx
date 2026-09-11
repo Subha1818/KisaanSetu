@@ -845,7 +845,7 @@ export const CentreAgentWidget: React.FC = () => {
       // Find oldest 'booked' status token for this centre
       const { data: waitingTokens, error } = await supabase
         .from('bookings')
-        .select('id, token, product_name, quantity, users(name)')
+        .select('id, token, product_name, quantity, users:farmer_id(name)')
         .eq('centre_id', activeCentre.id)
         .eq('status', 'booked')
         .order('created_at', { ascending: true })
@@ -971,7 +971,7 @@ export const CentreAgentWidget: React.FC = () => {
       const cleanQuery = queryStr.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
       const { data: matches, error } = await supabase
         .from('bookings')
-        .select('id, token, product_name, quantity, status, users(name, mobile_number)')
+        .select('id, token, product_name, quantity, status, users:farmer_id(name, mobile_number)')
         .eq('centre_id', activeCentre.id)
         .or(`token.ilike.%${cleanQuery}%,product_name.ilike.%${cleanQuery}%`)
         .order('created_at', { ascending: false })

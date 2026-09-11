@@ -17,7 +17,9 @@ export const useLiveQueue = (centreId?: string, bookingDateId?: string) => {
           token,
           status,
           farmer_id,
-          users (
+          qr_verified_at,
+          verified_by,
+          users:farmer_id (
             name,
             mobile_number
           )

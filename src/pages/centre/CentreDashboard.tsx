@@ -4,7 +4,7 @@ import {
   Settings, Users, Wallet, Play, Check, AlertTriangle, 
   Volume2, Trash2, Plus, Edit3, Download, Camera, XCircle, Calendar, Pencil, X, MapPin,
   Ticket, Wheat, Clock, BarChart2, TrendingUp, PieChart as PieChartIcon, Activity,
-  ShieldCheck, RotateCcw, Info
+  ShieldCheck, RotateCcw, Info, ShieldAlert, Search
 } from 'lucide-react';
 import { 
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend 
@@ -288,10 +288,14 @@ const BASELINE_MSP_RATES: Record<string, number> = {
   const [newMaxQty, setNewMaxQty] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // Scanner states
+  // Scanner & Verification states
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState<'qr' | 'manual'>('qr');
+  const [manualSearchQuery, setManualSearchQuery] = useState('');
   const [scannedBookingId, setScannedBookingId] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [verificationConfirmModal, setVerificationConfirmModal] = useState<{ booking: any } | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   // Fix 2: Payment correction modal state
   const [correctionModal, setCorrectionModal] = useState<{
@@ -303,7 +307,7 @@ const BASELINE_MSP_RATES: Record<string, number> = {
   const [correctionReason, setCorrectionReason] = useState<string>('');
 
   // Live Queue Subscription
-  const { queue: bookings } = useLiveQueue(centre?.id, todaySlotId);
+  const { queue: bookings, refetchQueue } = useLiveQueue(centre?.id, todaySlotId);
 
   // Fetch core session and centre mapping
   const fetchCentreData = async (showLoading = true) => {
@@ -388,7 +392,10 @@ const BASELINE_MSP_RATES: Record<string, number> = {
       setAvailableDates(allSlots || []);
 
       if (allSlots && allSlots.length > 0) {
-        const todayMatch = allSlots.find(s => s.date === localDateStr);
+        const todayMatch = allSlots.find(s => {
+          if (!s.date) return false;
+          return s.date === localDateStr || s.date.startsWith(localDateStr);
+        });
         setTodaySlotId(todayMatch ? todayMatch.id : undefined);
         setSelectedAllBookingsDateId(todayMatch ? todayMatch.id : allSlots[0].id);
       } else {
@@ -735,8 +742,64 @@ const BASELINE_MSP_RATES: Record<string, number> = {
     }
   };
 
+  const handleVerifyBooking = async (bookingId: string) => {
+    if (!session) return;
+    const target = bookings.find(b => b.id === bookingId);
+    if (!target) {
+      setError("Booking not found in today's active queue.");
+      return;
+    }
+    if (target.status !== 'called') {
+      setError(`Cannot verify booking: Token ${target.token} is in '${target.status}' status. Only CALLED tokens can be verified.`);
+      return;
+    }
+
+    try {
+      setVerifyingId(bookingId);
+      setError(null);
+      const now = new Date().toISOString();
+
+      const { error: updateErr } = await supabase
+        .from('bookings')
+        .update({
+          qr_verified_at: now,
+          verified_by: session.user.id
+        })
+        .eq('id', bookingId);
+
+      if (updateErr) throw new Error(updateErr.message);
+
+      await supabase.from('booking_history').insert({
+        booking_id: bookingId,
+        previous_status: 'called',
+        new_status: 'called',
+        changed_by: session.user.id,
+        note: 'Gate QR / Identity verified by depot staff',
+      });
+
+      setScannedBookingId(bookingId);
+      setVerificationConfirmModal(null);
+      setIsScannerOpen(false);
+      setScanError(null);
+      triggerNotification(`Token ${target.token} identity verified! START button is now unlocked.`);
+      if (refetchQueue) refetchQueue();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Verification failed.');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
   const handleStartProcurement = async (bookingId: string) => {
     if (!session) return;
+    const target = bookings.find(b => b.id === bookingId);
+    if (!target) return;
+    if (!target.qr_verified_at) {
+      setError(`Cannot start intake: Token ${target.token} is awaiting QR / Identity verification.`);
+      return;
+    }
+
     try {
       setLoading(true);
       const { error: bErr } = await supabase
@@ -751,11 +814,12 @@ const BASELINE_MSP_RATES: Record<string, number> = {
         previous_status: 'called',
         new_status: 'in_progress',
         changed_by: session.user.id,
-        note: 'Procurement started by staff',
+        note: 'Procurement started by staff after gate verification',
       });
 
       triggerNotification('Procurement weighment started.');
       setLoading(false);
+      if (refetchQueue) refetchQueue();
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -783,26 +847,37 @@ const BASELINE_MSP_RATES: Record<string, number> = {
 
       triggerNotification('Farmer marked as no-show.');
       setLoading(false);
+      if (refetchQueue) refetchQueue();
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
     }
   };
 
-  const handleScan = (result: any) => {
+  const handleScan = async (result: any) => {
     if (result && result.length > 0 && result[0].rawValue) {
-      const scannedId = result[0].rawValue;
+      const scannedId = result[0].rawValue.trim();
       const found = bookings.find(b => b.id === scannedId);
       if (!found) {
-        setScanError('Invalid token: Not found in today\'s active queue.');
-      } else if (found.status === 'completed' || found.status === 'no_show' || found.status === 'cancelled') {
-        setScanError(`Invalid token: Booking is already ${found.status.toUpperCase()}.`);
-      } else {
-        setScannedBookingId(found.id);
-        setIsScannerOpen(false);
-        setScanError(null);
-        triggerNotification(`Token ${found.token} successfully scanned and selected.`);
+        setScanError(`Scan Rejected: Token QR (${scannedId.substring(0, 8)}...) does not match any booking in today's queue at this centre.`);
+        return;
       }
+      if (found.status !== 'called') {
+        if (found.status === 'booked') {
+          setScanError(`Scan Rejected: Token ${found.token} is in 'booked' status and has NOT been called yet. Call this token first.`);
+        } else if (found.status === 'in_progress') {
+          setScanError(`Scan Rejected: Token ${found.token} is already in procurement intake.`);
+        } else if (found.status === 'completed') {
+          setScanError(`Scan Rejected: Token ${found.token} has already completed procurement.`);
+        } else {
+          setScanError(`Scan Rejected: Token ${found.token} is currently ${found.status.toUpperCase()}. Only 'called' tokens can be verified.`);
+        }
+        return;
+      }
+
+      // Valid called token match -> execute verification
+      setScanError(null);
+      await handleVerifyBooking(found.id);
     }
   };
 
@@ -1473,16 +1548,31 @@ const BASELINE_MSP_RATES: Record<string, number> = {
             </div>
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 mt-4 sm:mt-0">
               <button
-                onClick={() => setIsScannerOpen(true)}
-                className="w-full sm:w-auto px-6 py-3.5 bg-white border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-700 font-bold rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 text-sm"
+                onClick={() => {
+                  setScannerMode('qr');
+                  setScanError(null);
+                  setIsScannerOpen(true);
+                }}
+                className="w-full sm:w-auto px-5 py-3 bg-white border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-700 font-bold rounded-xl shadow-xs transition-all flex justify-center items-center gap-2 text-sm cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
-                Scan Token
+                Scan Token QR
+              </button>
+              <button
+                onClick={() => {
+                  setScannerMode('manual');
+                  setScanError(null);
+                  setIsScannerOpen(true);
+                }}
+                className="w-full sm:w-auto px-5 py-3 bg-white border-2 border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl shadow-xs transition-all flex justify-center items-center gap-2 text-sm cursor-pointer"
+              >
+                <Search className="w-4 h-4" />
+                Manual Lookup
               </button>
               <button
                 onClick={handleCallNext}
                 disabled={waitingToday === 0}
-                className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex justify-center items-center gap-2 text-sm disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex justify-center items-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
               >
                 <Volume2 className="w-4 h-4" />
                 Call Next Token
@@ -1490,52 +1580,104 @@ const BASELINE_MSP_RATES: Record<string, number> = {
             </div>
           </div>
 
-          {/* Scanned Token Display */}
+          {/* Scanned / Selected Token Display */}
           {scannedBookingId && (
-            <div className="bg-emerald-50 rounded-2xl border-2 border-emerald-200 p-6 shadow-sm shadow-emerald-900/5 mb-6 relative">
-              <button 
-                onClick={() => setScannedBookingId(null)}
-                className="absolute top-4 right-4 text-emerald-600 hover:text-emerald-800"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-emerald-900 text-lg">Verified Token</h3>
-              </div>
-              
-              {(() => {
-                const b = bookings.find(bk => bk.id === scannedBookingId);
-                if (!b) return null;
-                return (
+            (() => {
+              const b = bookings.find(bk => bk.id === scannedBookingId);
+              if (!b) return null;
+              const isVerified = Boolean(b.qr_verified_at);
+
+              return (
+                <div className={`rounded-2xl border-2 p-6 shadow-sm mb-6 relative transition-all duration-300 ${
+                  isVerified 
+                    ? 'bg-emerald-50/80 border-emerald-300 shadow-emerald-900/5' 
+                    : 'bg-amber-50/80 border-amber-300 shadow-amber-900/5'
+                }`}>
+                  <button 
+                    onClick={() => setScannedBookingId(null)}
+                    className={`absolute top-4 right-4 ${isVerified ? 'text-emerald-600 hover:text-emerald-800' : 'text-amber-600 hover:text-amber-800'} cursor-pointer`}
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                  <div className="flex items-center gap-2 mb-4">
+                    {isVerified ? (
+                      <>
+                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        <h3 className="font-bold text-emerald-900 text-lg">Gate Pass Verified</h3>
+                        <span className="ml-2 text-xs font-bold text-emerald-800 bg-emerald-200/70 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                          Ready for Intake
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldAlert className="w-5 h-5 text-amber-600 animate-pulse" />
+                        <h3 className="font-bold text-amber-900 text-lg">Awaiting QR / Identity Verification</h3>
+                        <span className="ml-2 text-xs font-bold text-amber-800 bg-amber-200/70 border border-amber-300 px-2.5 py-0.5 rounded-full">
+                          Intake Blocked
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  
                   <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex gap-6 items-center">
-                      <div className="bg-emerald-100 text-emerald-800 p-4 rounded-xl text-center">
+                      <div className={`p-4 rounded-xl text-center ${isVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
                         <span className="block text-xs uppercase font-bold opacity-70">Token</span>
                         <span className="block text-2xl font-black">{b.token}</span>
                       </div>
                       <div>
-                        <p className="font-bold text-emerald-950 text-lg">{b.users?.name}</p>
-                        <p className="text-sm text-emerald-800">{b.product_name} • {b.quantity} kg</p>
-                        <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-white text-emerald-700 border border-emerald-200">
-                          {b.status}
-                        </span>
+                        <p className="font-bold text-slate-900 text-lg">{b.users?.name || 'Farmer'}</p>
+                        <p className="text-sm text-slate-600">{b.product_name} • {b.quantity} kg • {b.users?.mobile_number}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-white text-slate-700 border border-slate-200">
+                            Status: {b.status}
+                          </span>
+                          {isVerified ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                              <Check className="w-3 h-3" /> Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                              <ShieldAlert className="w-3 h-3" /> Unverified
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                       {b.status === 'called' && (
-                        <button
-                          onClick={() => handleStartProcurement(b.id)}
-                          className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
-                        >
-                          <Play className="w-4 h-4" />
-                          Start
-                        </button>
+                        isVerified ? (
+                          <button
+                            onClick={() => handleStartProcurement(b.id)}
+                            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm inline-flex justify-center items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                          >
+                            <Play className="w-4 h-4" />
+                            Start Intake
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              disabled
+                              title="QR verification is required before procurement intake can start."
+                              className="w-full sm:w-auto px-4 py-2.5 bg-slate-200 text-slate-400 font-bold rounded-xl text-sm inline-flex justify-center items-center gap-1.5 cursor-not-allowed border border-slate-300"
+                            >
+                              <Play className="w-4 h-4 opacity-40" />
+                              Awaiting QR Verification
+                            </button>
+                            <button
+                              onClick={() => setVerificationConfirmModal({ booking: b })}
+                              className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm inline-flex justify-center items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                              Confirm Identity
+                            </button>
+                          </>
+                        )
                       )}
                       {b.status === 'in_progress' && (
                         <button
                           onClick={() => handleOpenCompleteModal(b)}
-                          className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
+                          className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm inline-flex justify-center items-center gap-1.5 shadow-md transition-all cursor-pointer"
                         >
                           <Check className="w-4 h-4" />
                           Complete
@@ -1544,7 +1686,7 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                       {(b.status === 'booked' || b.status === 'called') && (
                         <button
                           onClick={() => handleSkipBooking(b.id, b.status)}
-                          className="w-full sm:w-auto px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-lg text-sm inline-flex justify-center items-center gap-1.5 shadow-sm transition-all"
+                          className="w-full sm:w-auto px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-xl text-sm inline-flex justify-center items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                         >
                           <AlertTriangle className="w-4 h-4" />
                           Mark No-Show
@@ -1552,9 +1694,9 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                       )}
                     </div>
                   </div>
-                );
-              })()}
-            </div>
+                </div>
+              );
+            })()
           )}
 
           {/* Bookings Queue Table / Mobile Cards */}
@@ -1575,7 +1717,7 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-55 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
+                      <tr className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase">
                         <th className="py-4 px-6">Token</th>
                         <th className="py-4 px-6">Farmer Name</th>
                         <th className="py-4 px-6">Crop / Qty</th>
@@ -1596,34 +1738,69 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                             <p className="text-xs text-slate-500">{booking.quantity} kg (est.)</p>
                           </td>
                           <td className="py-4 px-6">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                              booking.status === 'booked' && 'bg-slate-100 text-slate-700'
-                            } ${
-                              booking.status === 'called' && 'bg-amber-100 text-amber-700'
-                            } ${
-                              booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
-                            } ${
-                              booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
-                            } ${
-                              booking.status === 'no_show' && 'bg-red-100 text-red-700'
-                            }`}>
-                              {booking.status}
-                            </span>
+                            <div className="flex flex-col items-start gap-1">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                                booking.status === 'booked' && 'bg-slate-100 text-slate-700'
+                              } ${
+                                booking.status === 'called' && 'bg-amber-100 text-amber-700'
+                              } ${
+                                booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
+                              } ${
+                                booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
+                              } ${
+                                booking.status === 'no_show' && 'bg-red-100 text-red-700'
+                              }`}>
+                                {booking.status}
+                              </span>
+                              {booking.status === 'called' && (
+                                booking.qr_verified_at ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                    Verified
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                    <ShieldAlert className="w-3 h-3 text-amber-600" />
+                                    Awaiting QR
+                                  </span>
+                                )
+                              )}
+                            </div>
                           </td>
                           <td className="py-4 px-6 text-right space-x-1">
                             {booking.status === 'called' && (
-                              <button
-                                onClick={() => handleStartProcurement(booking.id)}
-                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
-                              >
-                                <Play className="w-3.5 h-3.5" />
-                                Start
-                              </button>
+                              booking.qr_verified_at ? (
+                                <button
+                                  onClick={() => handleStartProcurement(booking.id)}
+                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                                >
+                                  <Play className="w-3.5 h-3.5" />
+                                  Start
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    disabled
+                                    title="QR verification is required before procurement intake can start."
+                                    className="px-3 py-1.5 bg-slate-100 text-slate-400 font-bold rounded-lg text-xs inline-flex items-center gap-1 border border-slate-200 cursor-not-allowed"
+                                  >
+                                    <Play className="w-3.5 h-3.5 opacity-40" />
+                                    Awaiting QR
+                                  </button>
+                                  <button
+                                    onClick={() => setVerificationConfirmModal({ booking })}
+                                    className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs inline-flex items-center gap-1 transition-all cursor-pointer"
+                                  >
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                    Verify
+                                  </button>
+                                </>
+                              )
                             )}
                             {booking.status === 'in_progress' && (
                               <button
                                 onClick={() => handleOpenCompleteModal(booking)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-750 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 Complete
@@ -1653,19 +1830,34 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                         <span className="font-mono font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-md border border-slate-200 text-sm tracking-wide">
                           {booking.token}
                         </span>
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          booking.status === 'booked' && 'bg-slate-100 text-slate-700'
-                        } ${
-                          booking.status === 'called' && 'bg-amber-100 text-amber-700'
-                        } ${
-                          booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
-                        } ${
-                          booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
-                        } ${
-                          booking.status === 'no_show' && 'bg-red-100 text-red-700'
-                        }`}>
-                          {booking.status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            booking.status === 'booked' && 'bg-slate-100 text-slate-700'
+                          } ${
+                            booking.status === 'called' && 'bg-amber-100 text-amber-700'
+                          } ${
+                            booking.status === 'in_progress' && 'bg-blue-100 text-blue-700'
+                          } ${
+                            booking.status === 'completed' && 'bg-emerald-100 text-emerald-700'
+                          } ${
+                            booking.status === 'no_show' && 'bg-red-100 text-red-700'
+                          }`}>
+                            {booking.status}
+                          </span>
+                          {booking.status === 'called' && (
+                            booking.qr_verified_at ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                <ShieldAlert className="w-3 h-3 text-amber-600" />
+                                Awaiting QR
+                              </span>
+                            )
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex justify-between items-start text-sm pt-1">
@@ -1682,13 +1874,33 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                       {/* Action buttons with minimum 44px height */}
                       <div className="pt-2 flex flex-col sm:flex-row gap-2">
                         {booking.status === 'called' && (
-                          <button
-                            onClick={() => handleStartProcurement(booking.id)}
-                            className="w-full flex-1 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                          >
-                            <Play className="w-4 h-4" />
-                            Start Intake
-                          </button>
+                          booking.qr_verified_at ? (
+                            <button
+                              onClick={() => handleStartProcurement(booking.id)}
+                              className="w-full flex-1 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                            >
+                              <Play className="w-4 h-4" />
+                              Start Intake
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                disabled
+                                title="QR verification is required before procurement intake can start."
+                                className="w-full flex-1 py-3 min-h-[44px] bg-slate-100 text-slate-400 font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 border border-slate-200 cursor-not-allowed"
+                              >
+                                <Play className="w-4 h-4 opacity-40" />
+                                Awaiting QR Verification
+                              </button>
+                              <button
+                                onClick={() => setVerificationConfirmModal({ booking })}
+                                className="w-full sm:w-auto px-4 py-3 min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                              >
+                                <ShieldCheck className="w-4 h-4" />
+                                Verify Identity
+                              </button>
+                            </>
+                          )
                         )}
                         {booking.status === 'in_progress' && (
                           <button
@@ -2745,19 +2957,26 @@ const BASELINE_MSP_RATES: Record<string, number> = {
         </div>
       )}
 
-      {/* Scanner Modal */}
+      {/* Scanner & Manual Verification Modal */}
       {isScannerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-3 sm:p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[85vh] max-h-[700px] my-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[85vh] max-h-[720px] my-auto">
+            {/* Modal Header */}
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base">
-                <Camera className="w-5 h-5 text-indigo-600" />
-                Scan Token QR Code
-              </h3>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">Token Verification Gate</h3>
+                  <p className="text-xs text-slate-400">Verify farmer gate pass before intake</p>
+                </div>
+              </div>
               <button 
                 onClick={() => {
                   setIsScannerOpen(false);
                   setScanError(null);
+                  setManualSearchQuery('');
                 }}
                 className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
                 aria-label="Close scanner"
@@ -2765,30 +2984,261 @@ const BASELINE_MSP_RATES: Record<string, number> = {
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
+
+            {/* Mode Switch Tabs */}
+            <div className="flex border-b border-slate-200 bg-slate-100/70 p-1.5 gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerMode('qr');
+                  setScanError(null);
+                }}
+                className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  scannerMode === 'qr'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Camera className="w-4 h-4" />
+                Live QR Scan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerMode('manual');
+                  setScanError(null);
+                }}
+                className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  scannerMode === 'manual'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Search className="w-4 h-4" />
+                Manual Token Lookup
+              </button>
+            </div>
+
+            {/* Modal Body */}
             <div className="p-4 sm:p-6 flex-1 flex flex-col overflow-y-auto">
-              <p className="text-xs sm:text-sm text-slate-500 mb-3 text-center">
-                Point your camera at the farmer's token QR code. Make sure you are using a secure connection (HTTPS) for camera access.
-              </p>
-              
               {scanError && (
-                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm flex items-start gap-2">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs sm:text-sm flex items-start gap-2 shrink-0">
                   <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                   <span>{scanError}</span>
                 </div>
               )}
-              
-              <div className="relative rounded-xl overflow-hidden bg-black flex-1 min-h-[260px] border border-slate-200 shadow-inner">
-                <Scanner 
-                  onScan={handleScan}
-                  onError={(err: any) => setScanError(err?.message || 'Camera error. Please ensure camera permissions are granted.')}
-                  components={{
-                    onOff: true,
-                    torch: true,
-                    zoom: true,
-                    finder: true,
-                  }}
-                />
+
+              {scannerMode === 'qr' ? (
+                <>
+                  <p className="text-xs sm:text-sm text-slate-500 mb-3 text-center shrink-0">
+                    Point camera at farmer's pass QR code. Only currently <strong>CALLED</strong> tokens at this centre can be verified.
+                  </p>
+                  <div className="relative rounded-xl overflow-hidden bg-black flex-1 min-h-[260px] border border-slate-200 shadow-inner">
+                    <Scanner 
+                      onScan={handleScan}
+                      onError={(err: any) => setScanError(err?.message || 'Camera error. Ensure camera permissions are granted.')}
+                      components={{
+                        onOff: true,
+                        torch: true,
+                        zoom: true,
+                        finder: true,
+                      }}
+                    />
+                  </div>
+                </>
+              ) : (
+                /* Manual Search Mode */
+                <div className="flex-1 flex flex-col space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                      Search by Token, Farmer Name, or Mobile
+                    </label>
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="text"
+                        value={manualSearchQuery}
+                        onChange={(e) => setManualSearchQuery(e.target.value)}
+                        placeholder="e.g. 101, TK-101, Ramesh, 9876..."
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        autoFocus
+                      />
+                      {manualSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setManualSearchQuery('')}
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* List Results */}
+                  <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                    {(() => {
+                      const q = manualSearchQuery.trim().toLowerCase();
+                      const filtered = bookings.filter((b) => {
+                        if (!q) return true;
+                        const tokenMatch = (b.token || '').toLowerCase().includes(q);
+                        const nameMatch = (b.users?.name || '').toLowerCase().includes(q);
+                        const mobileMatch = (b.users?.mobile_number || '').includes(q);
+                        return tokenMatch || nameMatch || mobileMatch;
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-slate-400 text-sm">
+                            No matching appointments found for "{manualSearchQuery}".
+                          </div>
+                        );
+                      }
+
+                      return filtered.map((b) => {
+                        const isCalled = b.status === 'called';
+                        const isVerified = Boolean(b.qr_verified_at);
+
+                        return (
+                          <div 
+                            key={b.id}
+                            className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row justify-between sm:items-center gap-3 ${
+                              isCalled && !isVerified 
+                                ? 'bg-amber-50/70 border-amber-300' 
+                                : isVerified
+                                ? 'bg-emerald-50/70 border-emerald-300'
+                                : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono font-black text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-sm">
+                                {b.token}
+                              </span>
+                              <div>
+                                <p className="font-bold text-slate-800 text-sm">{b.users?.name || 'Farmer'}</p>
+                                <p className="text-xs text-slate-500">{b.product_name} • {b.quantity} kg • {b.users?.mobile_number}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-white text-slate-600 border border-slate-200">
+                                    {b.status}
+                                  </span>
+                                  {isVerified && (
+                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                      <Check className="w-2.5 h-2.5" /> Verified
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex sm:justify-end">
+                              {isCalled && !isVerified && (
+                                <button
+                                  type="button"
+                                  onClick={() => setVerificationConfirmModal({ booking: b })}
+                                  className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs inline-flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                  Confirm Identity
+                                </button>
+                              )}
+                              {isCalled && isVerified && (
+                                <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 inline-flex items-center gap-1">
+                                  <ShieldCheck className="w-3.5 h-3.5" /> Ready for Intake
+                                </span>
+                              )}
+                              {b.status === 'booked' && (
+                                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                  Not Called Yet
+                                </span>
+                              )}
+                              {(b.status === 'in_progress' || b.status === 'completed') && (
+                                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 capitalize">
+                                  {b.status.replace('_', ' ')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Explicit Identity Confirmation Modal (Gating verification) */}
+      {verificationConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" role="dialog" aria-modal="true">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center gap-3 bg-indigo-50">
+              <div className="p-2 bg-indigo-100 rounded-lg text-indigo-700">
+                <ShieldCheck className="w-5 h-5" />
               </div>
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">Confirm Farmer Identity</h3>
+                <p className="text-xs text-indigo-700 mt-0.5">Gate Pass & Documentation Check</p>
+              </div>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase">Token Number</span>
+                  <span className="font-mono font-black text-slate-900 text-base bg-white px-2.5 py-0.5 rounded border border-slate-200">
+                    {verificationConfirmModal.booking.token}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-medium">Farmer Name</span>
+                  <span className="font-bold text-slate-800">{verificationConfirmModal.booking.users?.name || 'Farmer'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-medium">Mobile Number</span>
+                  <span className="font-bold text-slate-800">{verificationConfirmModal.booking.users?.mobile_number || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-medium">Crop & Quantity</span>
+                  <span className="font-bold text-slate-800">{verificationConfirmModal.booking.product_name} • {verificationConfirmModal.booking.quantity} kg</span>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-800">
+                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Confirming identity logs the staff verification timestamp and unlocks the <strong>START</strong> intake button for this booking.
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setVerificationConfirmModal(null)}
+                className="flex-1 py-3 min-h-[44px] border border-slate-200 hover:bg-slate-100 font-bold rounded-xl text-sm transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleVerifyBooking(verificationConfirmModal.booking.id)}
+                disabled={verifyingId === verificationConfirmModal.booking.id}
+                className="flex-1 py-3 min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {verifyingId === verificationConfirmModal.booking.id ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    Confirm Identity
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

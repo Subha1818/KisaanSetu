@@ -65,7 +65,7 @@ export const ActivityLog: React.FC = () => {
           bookings (
             token,
             product_name,
-            users (
+            users:farmer_id (
               name,
               mobile_number
             ),

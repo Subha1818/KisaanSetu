@@ -131,6 +131,8 @@ CREATE TABLE public.bookings (
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     cancelled_at timestamp with time zone,
     cancellation_reason text,
+    qr_verified_at timestamp with time zone,
+    verified_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
     -- Unique token per centre and date to avoid queue conflicts
     UNIQUE (centre_id, booking_date_id, token)
 );

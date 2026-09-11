@@ -14,7 +14,7 @@ export const generateProcurementReceipt = async (procurementId: string) => {
           token,
           product_name,
           booking_dates ( date ),
-          users ( name, mobile_number ),
+          users:farmer_id ( name, mobile_number ),
           procurement_centres ( 
             name, 
             geo_blocks (
@@ -182,7 +182,7 @@ export const generateTokenPDF = async (bookingId: string, estimatedTimeWindow?: 
         .select(`
           *,
           booking_dates ( date ),
-          users ( name, mobile_number ),
+          users:farmer_id ( name, mobile_number ),
           procurement_centres ( 
             name, 
             opening_time,
