@@ -230,54 +230,81 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Mobile Dropdown Menu */}
           {isMobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-slate-100 flex flex-col space-y-2 pb-6">
-              <div className="px-2 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">{t('layout.portals')}</div>
-              {navItems.map((item) => {
+            <div className="md:hidden py-4 border-t border-amber-300/60 flex flex-col space-y-1.5 pb-5">
+
+              {/* Portals Section */}
+              <div className="px-1 pb-2 text-[10px] font-extrabold text-amber-700/80 uppercase tracking-widest">{t('layout.portals')}</div>
+              {navItems.map((item, idx) => {
                 const isActive = location.pathname.startsWith(item.path);
                 const Icon = item.icon;
+                // Each portal gets its own accent colour
+                const accentStyles = [
+                  { bg: 'bg-emerald-500', light: 'bg-emerald-50 border-emerald-300 text-emerald-900', icon: 'text-white' },
+                  { bg: 'bg-blue-500',    light: 'bg-blue-50   border-blue-300   text-blue-900',    icon: 'text-white' },
+                  { bg: 'bg-violet-500',  light: 'bg-violet-50 border-violet-300 text-violet-900',  icon: 'text-white' },
+                ];
+                const accent = accentStyles[idx % accentStyles.length];
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${isActive
-                      ? 'bg-white text-emerald-800 shadow-sm border-2 border-emerald-400'
-                      : 'text-slate-600 hover:bg-slate-50 active:bg-slate-100'
-                      }`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all min-h-[52px] border ${
+                      isActive
+                        ? `${accent.light} shadow-sm`
+                        : 'bg-white/70 border-slate-200 text-slate-800 hover:bg-white active:scale-[0.98]'
+                    }`}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    {item.label}
+                    {/* Colored icon badge */}
+                    <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                      isActive ? accent.bg : accent.bg + ' opacity-80'
+                    }`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    {isActive && (
+                      <span className="w-2 h-2 rounded-full bg-current opacity-60 mr-1" />
+                    )}
                   </Link>
                 );
               })}
 
-              <div className="px-2 pt-4 pb-2 text-xs font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 mt-2">{t('layout.account')}</div>
+              {/* Account Section */}
+              <div className="px-1 pt-3 pb-2 text-[10px] font-extrabold text-amber-700/80 uppercase tracking-widest border-t border-amber-300/60 mt-1">{t('layout.account')}</div>
               {session ? (
                 <button
                   onClick={() => {
                     setIsLogoutModalOpen(true);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-red-600 hover:bg-red-50 min-h-[48px]"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 min-h-[52px] active:scale-[0.98]"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-red-500">
+                    <LogOut className="w-5 h-5 text-white" />
+                  </span>
                   {t('layout.logout')}
                 </button>
               ) : (
                 authItems.map((item) => {
                   const isActive = location.pathname === item.path;
                   const Icon = item.icon;
+                  const isRegister = item.path === '/register';
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${item.path === '/register'
-                        ? 'bg-slate-900 text-white mt-2'
-                        : isActive
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'text-slate-600 border border-slate-200'
-                        }`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all min-h-[52px] border active:scale-[0.98] ${
+                        isRegister
+                          ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-md shadow-emerald-600/20'
+                          : isActive
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-white/70 text-slate-800 border-slate-200 hover:bg-white'
+                      }`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                        isRegister ? 'bg-emerald-700' : 'bg-slate-700'
+                      }`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </span>
                       {item.label}
                     </Link>
                   );
