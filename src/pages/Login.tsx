@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sprout, AlertCircle, Loader, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Sprout, AlertCircle, Loader, ArrowLeft, Eye, EyeOff, WifiOff, UserCheck, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
+
+const CACHED_PROFILE_KEY = 'kisaansetu_cached_user_profile';
+
+interface CachedSession {
+  userId: string;
+  role: string;
+  email?: string;
+  mobile?: string;
+  updatedAt: string;
+}
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -11,10 +21,49 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [cachedSession, setCachedSession] = useState<CachedSession | null>(null);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Check for cached session in localStorage
+    try {
+      const raw = localStorage.getItem(CACHED_PROFILE_KEY);
+      if (raw) {
+        setCachedSession(JSON.parse(raw));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const handleContinueOffline = () => {
+    if (!cachedSession) return;
+    const role = cachedSession.role;
+    if (role === 'admin') navigate('/admin');
+    else if (role === 'staff') navigate('/centre');
+    else navigate('/farmer');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!navigator.onLine) {
+      setError(t('auth.offline_login_err', 'You are currently offline. Initial login requires an internet connection. If you logged in previously, click "Continue Offline" below.'));
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -55,12 +104,8 @@ const Login: React.FC = () => {
         throw new Error('Failed to retrieve user profile or role mapping.');
       }
 
-      // 3. Redirect to correct panel
       const role = profile.role;
-      if (role === 'admin') {
-        navigate('/admin');
-        return;
-      }
+      let finalRole = role;
 
       // Check if user has a staff row mapping
       const { data: staffMapping } = await supabase
@@ -70,7 +115,28 @@ const Login: React.FC = () => {
         .maybeSingle();
 
       if (staffMapping?.centre_id) {
-        // They are centre staff - check their centre's approval status
+        finalRole = 'staff';
+      }
+
+      // Cache session details in localStorage for seamless offline usage
+      localStorage.setItem(
+        CACHED_PROFILE_KEY,
+        JSON.stringify({
+          userId: data.user.id,
+          role: finalRole,
+          email: data.user.email,
+          mobile: formattedPhone,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+
+      // 3. Redirect to correct panel
+      if (finalRole === 'admin') {
+        navigate('/admin');
+        return;
+      }
+
+      if (staffMapping?.centre_id) {
         const { data: centreData } = await supabase
           .from('procurement_centres')
           .select('approval_status')
@@ -82,15 +148,17 @@ const Login: React.FC = () => {
         } else if (centreData?.approval_status === 'rejected') {
           navigate('/centre/rejected');
         } else {
-          // Approved
           navigate('/centre');
         }
       } else {
-        // No staff mapping -> must be a farmer
         navigate('/farmer');
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication.');
+      if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
+        setError('Network offline. Failed to connect to server. Please check internet connectivity.');
+      } else {
+        setError(err.message || 'An error occurred during authentication.');
+      }
     } finally {
       setLoading(false);
     }
@@ -102,7 +170,6 @@ const Login: React.FC = () => {
         
         {/* Left Decorative Panel (Hidden on Mobile) */}
         <div className="hidden lg:flex lg:w-1/2 bg-emerald-900 text-white flex-col p-12 relative overflow-hidden">
-          {/* Abstract background shapes */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-emerald-800/30 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 rounded-full bg-emerald-950/40 blur-2xl"></div>
 
@@ -126,15 +193,11 @@ const Login: React.FC = () => {
             </div>
           </div>
           
-          {/* Minimal SVG Illustration */}
           <div className="relative z-10 flex justify-center items-center flex-1 mt-8 w-full">
             <svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg" className="max-w-full h-auto drop-shadow-2xl">
-              {/* Sun */}
               <circle cx="260" cy="60" r="30" fill="#D97706" fillOpacity="0.8" />
-              {/* Abstract Fields */}
               <path d="M0 200C80 170 160 210 320 180V240H0V200Z" fill="#FCD34D" fillOpacity="0.4" />
               <path d="M0 220C120 190 200 230 320 200V240H0V220Z" fill="#F59E0B" fillOpacity="0.3" />
-              {/* Minimal Farmer */}
               <circle cx="100" cy="110" r="14" fill="#FCD34D" />
               <path d="M75 100C90 85 110 85 125 100L115 110C105 100 95 100 85 110L75 100Z" fill="#D97706" />
               <path d="M70 220C70 190 85 150 100 130C115 150 130 190 130 220H70Z" fill="#FCD34D" />
@@ -144,7 +207,7 @@ const Login: React.FC = () => {
 
       {/* Right Form Panel */}
       <div className="w-full lg:w-1/2 flex flex-col p-5 sm:p-12 overflow-y-auto justify-center">
-        <div className="w-full max-w-md mx-auto space-y-8">
+        <div className="w-full max-w-md mx-auto space-y-6">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1">
             <ArrowLeft className="w-4 h-4" />
             {t('auth.back_to_home')}
@@ -154,6 +217,30 @@ const Login: React.FC = () => {
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans">{t('auth.sign_in')}</h2>
           </div>
 
+          {/* Offline Banner & Cached Session Prompt */}
+          {isOffline && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 space-y-3">
+              <div className="flex items-center gap-2 font-bold text-amber-900">
+                <WifiOff className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>Offline Mode Active</span>
+              </div>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Initial login requires internet connection. However, if you have logged in on this device before, your session can be restored.
+              </p>
+              {cachedSession && (
+                <button
+                  type="button"
+                  onClick={handleContinueOffline}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  <span>Continue Offline ({cachedSession.role.toUpperCase()})</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
@@ -161,7 +248,7 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          <form className="mt-6 sm:mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="mobile" className="block text-sm font-semibold text-slate-700 mb-1">

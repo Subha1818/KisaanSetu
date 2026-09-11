@@ -277,13 +277,19 @@ const FarmerDashboard: React.FC = () => {
         }
 
         // Get farmer name
-        const { data: profile } = await supabase
-          .from('users')
-          .select('name')
-          .eq('id', session.user.id)
-          .single();
-        if (profile) {
-          setFarmerName(profile.name);
+        try {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', session.user.id)
+            .single();
+          if (profile?.name) {
+            setFarmerName(profile.name);
+            localStorage.setItem('kisaan_farmer_name', profile.name);
+          }
+        } catch {
+          const cachedName = localStorage.getItem('kisaan_farmer_name');
+          if (cachedName) setFarmerName(cachedName);
         }
 
         // Get active booking (booked, called, or in_progress)
@@ -317,66 +323,70 @@ const FarmerDashboard: React.FC = () => {
           .order('created_at', { ascending: false })
           .limit(1);
 
-        if (bookingErr) {
-          throw new Error(bookingErr.message);
-        }
-
-        if (bookings && bookings.length > 0) {
+        if (!bookingErr && bookings && bookings.length > 0) {
           setActiveBooking(bookings[0]);
-          try {
-            localStorage.setItem('kisaan_active_booking', JSON.stringify(bookings[0]));
-          } catch (e) {
-            console.error('Failed to cache booking locally:', e);
-          }
+          localStorage.setItem('kisaan_active_booking', JSON.stringify(bookings[0]));
+        } else if (bookingErr && !navigator.onLine) {
+          throw new Error('OFFLINE_FALLBACK');
         }
 
         // Get past completed procurements for this farmer
-        // Use subquery approach: get booking IDs first, then query procurements
-        const { data: farmerBookingIds } = await supabase
-          .from('bookings')
-          .select('id')
-          .eq('farmer_id', session.user.id);
+        try {
+          const { data: farmerBookingIds } = await supabase
+            .from('bookings')
+            .select('id')
+            .eq('farmer_id', session.user.id);
 
-        if (farmerBookingIds && farmerBookingIds.length > 0) {
-          const bookingIds = farmerBookingIds.map((b: any) => b.id);
-          const { data: historyData, error: histErr } = await supabase
-            .from('procurements')
-            .select(`
-              id,
-              created_at,
-              quantity_accepted,
-              total_amount,
-              note,
-              booking_id,
-              bookings (
-                token,
-                product_name,
-                booking_dates ( date ),
-                procurement_centres ( name )
-              ),
-              payments ( status )
-            `)
-            .in('booking_id', bookingIds)
-            .order('created_at', { ascending: false });
+          if (farmerBookingIds && farmerBookingIds.length > 0) {
+            const bookingIds = farmerBookingIds.map((b: any) => b.id);
+            const { data: historyData, error: histErr } = await supabase
+              .from('procurements')
+              .select(`
+                id,
+                created_at,
+                quantity_accepted,
+                total_amount,
+                note,
+                booking_id,
+                bookings (
+                  token,
+                  product_name,
+                  booking_dates ( date ),
+                  procurement_centres ( name )
+                ),
+                payments ( status )
+              `)
+              .in('booking_id', bookingIds)
+              .order('created_at', { ascending: false });
 
-          if (!histErr && historyData) {
-            setProcurementHistory(historyData);
-          } else if (histErr) {
-            console.error('Error fetching procurement history:', histErr);
+            if (!histErr && historyData) {
+              setProcurementHistory(historyData);
+              localStorage.setItem('kisaan_procurement_history', JSON.stringify(historyData));
+            }
           }
+        } catch {
+          const cachedHist = localStorage.getItem('kisaan_procurement_history');
+          if (cachedHist) setProcurementHistory(JSON.parse(cachedHist));
         }
         
         // Fetch opening time for the active booking's centre
         if (bookings && bookings.length > 0) {
           const centreId = bookings[0].centre_id;
-          const { data: cData } = await supabase
-            .from('procurement_centres')
-            .select('opening_time')
-            .eq('id', centreId)
-            .single();
-            
-          if (cData?.opening_time) {
-            setCentreOpeningTime(cData.opening_time.substring(0, 5));
+          try {
+            const { data: cData } = await supabase
+              .from('procurement_centres')
+              .select('opening_time')
+              .eq('id', centreId)
+              .single();
+              
+            if (cData?.opening_time) {
+              const opTime = cData.opening_time.substring(0, 5);
+              setCentreOpeningTime(opTime);
+              localStorage.setItem('kisaan_centre_opening_time', opTime);
+            }
+          } catch {
+            const cachedOp = localStorage.getItem('kisaan_centre_opening_time');
+            if (cachedOp) setCentreOpeningTime(cachedOp);
           }
         }
 
@@ -389,30 +399,47 @@ const FarmerDashboard: React.FC = () => {
 
           if (!mspErr && mspData && mspData.length > 0) {
             setMspRates(mspData);
+            localStorage.setItem('kisaan_msp_rates', JSON.stringify(mspData));
           } else {
-            // Default baseline values if table empty or pending migration
             setMspRates([
               { id: '1', crop_name: 'Wheat', rate_per_kg: 22.75, effective_date: '2024-04-01' },
               { id: '2', crop_name: 'Paddy', rate_per_kg: 21.83, effective_date: '2024-04-01' },
               { id: '3', crop_name: 'Maize', rate_per_kg: 20.90, effective_date: '2024-04-01' }
             ]);
           }
-        } catch (mspCatchErr) {
-          console.error('Error fetching MSP rates:', mspCatchErr);
+        } catch {
+          const cachedMsp = localStorage.getItem('kisaan_msp_rates');
+          if (cachedMsp) setMspRates(JSON.parse(cachedMsp));
+          setLoadingMsp(false);
         } finally {
           setLoadingMsp(false);
         }
 
       } catch (err: any) {
-        console.error('Error fetching dashboard data:', err);
-        setError(err.message || 'Failed to fetch dashboard data. Loading offline cached token...');
+        console.warn('Network or error during dashboard fetch, attempting offline restore:', err);
+        let restored = false;
         try {
-          const cached = localStorage.getItem('kisaan_active_booking');
-          if (cached) {
-            setActiveBooking(JSON.parse(cached));
+          const cachedBooking = localStorage.getItem('kisaan_active_booking');
+          if (cachedBooking) {
+            setActiveBooking(JSON.parse(cachedBooking));
+            restored = true;
           }
+          const cachedName = localStorage.getItem('kisaan_farmer_name');
+          if (cachedName) setFarmerName(cachedName);
+
+          const cachedHist = localStorage.getItem('kisaan_procurement_history');
+          if (cachedHist) setProcurementHistory(JSON.parse(cachedHist));
+
+          const cachedOp = localStorage.getItem('kisaan_centre_opening_time');
+          if (cachedOp) setCentreOpeningTime(cachedOp);
         } catch (e) {
           console.error('Failed to load cached booking:', e);
+        }
+
+        if (restored) {
+          setError(null);
+        } else {
+          setError('No cached ticket found offline. Connect to network to fetch bookings.');
         }
       } finally {
         setLoading(false);

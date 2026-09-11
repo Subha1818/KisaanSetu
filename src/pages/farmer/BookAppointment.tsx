@@ -456,8 +456,32 @@ const BookAppointment: React.FC = () => {
       const result = data as any;
       if (result.success) {
         setGeneratedToken(result.token);
-        
-        // Fetch queue stats for arrival estimation
+
+        // Cache newly booked ticket locally for instant offline availability
+        try {
+          const bookingObj = {
+            id: result.booking_id || `booking_${Date.now()}`,
+            centre_id: selectedCentre.id,
+            booking_date_id: selectedDate.id,
+            product_name: selectedProduct.product_name,
+            quantity: parsedQty,
+            token: result.token,
+            status: 'booked',
+            created_at: new Date().toISOString(),
+            procurement_centres: {
+              id: selectedCentre.id,
+              name: selectedCentre.name,
+              geo_blocks: selectedCentre.geo_blocks
+            },
+            booking_dates: {
+              id: selectedDate.id,
+              date: selectedDate.date
+            }
+          };
+          localStorage.setItem('kisaan_active_booking', JSON.stringify(bookingObj));
+        } catch (e) {
+          console.error('Failed to cache new booking in localStorage:', e);
+        }
         try {
           const { data: centreData } = await supabase
             .from('procurement_centres')

@@ -7,6 +7,8 @@ interface ProtectedRouteProps {
   allowedRoles?: ('farmer' | 'staff' | 'admin')[];
 }
 
+const CACHED_PROFILE_KEY = 'kisaansetu_cached_user_profile';
+
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
@@ -27,31 +29,60 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
         setUser(session.user);
 
-        // Fetch custom role from public.users table
-        const { data: profile, error } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+        // If offline or network failure, try loading cached profile from localStorage first
+        const cachedRaw = localStorage.getItem(CACHED_PROFILE_KEY);
+        let cachedData = cachedRaw ? JSON.parse(cachedRaw) : null;
 
-        let currentRole = profile?.role;
-
-        // If their role is farmer, double check if they have a staff mapping
-        // (Staff are registered with 'farmer' role by default in users table)
-        if (currentRole === 'farmer') {
-          const { data: staffMapping } = await supabase
-            .from('staff')
-            .select('centre_id')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-            
-          if (staffMapping?.centre_id) {
-            currentRole = 'staff';
-          }
+        if (!navigator.onLine && cachedData && cachedData.userId === session.user.id) {
+          console.log('Offline mode: Using cached user role', cachedData.role);
+          setRole(cachedData.role);
+          setLoading(false);
+          return;
         }
 
-        if (currentRole && !error) {
-          setRole(currentRole);
+        // Try fetching online role mapping from Supabase
+        try {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          let currentRole = profile?.role;
+
+          if (currentRole === 'farmer') {
+            const { data: staffMapping } = await supabase
+              .from('staff')
+              .select('centre_id')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+
+            if (staffMapping?.centre_id) {
+              currentRole = 'staff';
+            }
+          }
+
+          if (currentRole) {
+            setRole(currentRole);
+            // Cache profile for offline availability
+            localStorage.setItem(
+              CACHED_PROFILE_KEY,
+              JSON.stringify({
+                userId: session.user.id,
+                role: currentRole,
+                email: session.user.email,
+                phone: session.user.phone,
+                updatedAt: new Date().toISOString(),
+              })
+            );
+          } else if (cachedData && cachedData.userId === session.user.id) {
+            setRole(cachedData.role);
+          }
+        } catch (fetchErr) {
+          console.warn('Network error fetching profile, using offline fallback cache:', fetchErr);
+          if (cachedData && cachedData.userId === session.user.id) {
+            setRole(cachedData.role);
+          }
         }
       } catch (err) {
         console.error('Error during ProtectedRoute auth check:', err);
@@ -67,27 +98,53 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       async (_event, session) => {
         if (session) {
           setUser(session.user);
-          const { data: profile } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-          let currentRole = profile?.role;
-          
-          if (currentRole === 'farmer') {
-            const { data: staffMapping } = await supabase
-              .from('staff')
-              .select('centre_id')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-              
-            if (staffMapping?.centre_id) {
-              currentRole = 'staff';
-            }
+          const cachedRaw = localStorage.getItem(CACHED_PROFILE_KEY);
+          const cachedData = cachedRaw ? JSON.parse(cachedRaw) : null;
+
+          if (!navigator.onLine && cachedData && cachedData.userId === session.user.id) {
+            setRole(cachedData.role);
+            setLoading(false);
+            return;
           }
-          
-          if (currentRole) {
-            setRole(currentRole);
+
+          try {
+            const { data: profile } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+
+            let currentRole = profile?.role;
+            if (currentRole === 'farmer') {
+              const { data: staffMapping } = await supabase
+                .from('staff')
+                .select('centre_id')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+
+              if (staffMapping?.centre_id) {
+                currentRole = 'staff';
+              }
+            }
+
+            if (currentRole) {
+              setRole(currentRole);
+              localStorage.setItem(
+                CACHED_PROFILE_KEY,
+                JSON.stringify({
+                  userId: session.user.id,
+                  role: currentRole,
+                  email: session.user.email,
+                  updatedAt: new Date().toISOString(),
+                })
+              );
+            } else if (cachedData && cachedData.userId === session.user.id) {
+              setRole(cachedData.role);
+            }
+          } catch {
+            if (cachedData && cachedData.userId === session.user.id) {
+              setRole(cachedData.role);
+            }
           }
         } else {
           setUser(null);

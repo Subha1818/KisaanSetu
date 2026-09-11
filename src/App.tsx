@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PWABanner } from './components/PWABanner';
 
 // Lazy loading routes to ensure instant initial load on 3G networks
 const Landing = lazy(() => import('./pages/Landing'));
@@ -28,6 +29,7 @@ const PageLoader = () => (
 function App() {
   return (
     <Router>
+      <PWABanner />
       <Layout>
         <Suspense fallback={<PageLoader />}>
           <Routes>

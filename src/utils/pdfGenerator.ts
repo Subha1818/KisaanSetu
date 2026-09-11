@@ -175,32 +175,48 @@ export const generateProcurementReceipt = async (procurementId: string) => {
 
 export const generateTokenPDF = async (bookingId: string, estimatedTimeWindow?: string) => {
   try {
-    const { data: booking, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        booking_dates ( date ),
-        users ( name, mobile_number ),
-        procurement_centres ( 
-          name, 
-          opening_time,
-          avg_minutes_per_farmer,
-          geo_blocks (
-            district_name,
-            block_name,
-            state_name
-          ) 
-        )
-      `)
-      .eq('id', bookingId)
-      .single();
+    let booking: any = null;
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          booking_dates ( date ),
+          users ( name, mobile_number ),
+          procurement_centres ( 
+            name, 
+            opening_time,
+            avg_minutes_per_farmer,
+            geo_blocks (
+              district_name,
+              block_name,
+              state_name
+            ) 
+          )
+        `)
+        .eq('id', bookingId)
+        .single();
 
-    if (error || !booking) {
-      throw new Error(error?.message || 'Failed to fetch booking details');
+      if (!error && data) {
+        booking = data;
+      }
+    } catch (e) {
+      console.warn('Network error fetching booking for PDF, checking offline cache:', e);
     }
 
-    const centre = booking.procurement_centres as any;
-    const farmer = booking.users as any;
+    if (!booking) {
+      const cached = localStorage.getItem('kisaan_active_booking');
+      if (cached) {
+        booking = JSON.parse(cached);
+      }
+    }
+
+    if (!booking) {
+      throw new Error('Failed to fetch booking details for PDF.');
+    }
+
+    const centre = booking.procurement_centres || { name: 'Procurement Centre' };
+    const farmer = booking.users || { name: 'Farmer', mobile_number: 'N/A' };
     const geo = centre.geo_blocks || {};
 
     // Calculate arrival window if not directly supplied
