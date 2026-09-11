@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { CACHED_PROFILE_KEY, type CachedSession } from '../lib/offlineAuth';
+
+export { CACHED_PROFILE_KEY, type CachedSession };
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: ('farmer' | 'staff' | 'admin')[];
 }
-
-const CACHED_PROFILE_KEY = 'kisaansetu_cached_user_profile';
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Loader, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Loader, ArrowLeft, Eye, EyeOff, WifiOff, UserCheck, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '../components/Logo';
+import { CACHED_PROFILE_KEY, type CachedSession } from '../lib/offlineAuth';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();

@@ -10,7 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icons.svg'],
+      devOptions: {
+        enabled: true,
+      },
+      includeAssets: ['favicon.png', 'favicon.svg', 'apple-touch-icon.png', 'icons.svg'],
       manifest: {
         name: 'KisaanSetu - Farmer Procurement Portal',
         short_name: 'KisaanSetu',
