@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Bot,
   X,
@@ -2638,6 +2638,15 @@ export const KisanAgentWidget: React.FC = () => {
     }
   };
 
+  const location = useLocation();
+  const isFarmerDashboard = location.pathname === '/farmer';
+
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-kisan-ai', handleOpen);
+    return () => window.removeEventListener('open-kisan-ai', handleOpen);
+  }, []);
+
   const currentLang = (i18n.language || 'hi').split('-')[0].toLowerCase();
   const dict = AGENT_I18N[currentLang] || AGENT_I18N['en'] || AGENT_I18N['hi'];
   const { nodeRef, position, isDragging, handlers } = useDraggableWidget('kisan_agent_capsule_pos', () => setIsOpen(true));
@@ -2654,7 +2663,9 @@ export const KisanAgentWidget: React.FC = () => {
               ? { left: `${position.x}px`, top: `${position.y}px`, touchAction: 'none' }
               : { right: '1.5rem', bottom: '1.5rem', touchAction: 'none' }
           }
-          className="fixed z-50 select-none cursor-grab active:cursor-grabbing"
+          className={`fixed z-50 select-none cursor-grab active:cursor-grabbing ${
+            isFarmerDashboard ? 'hidden md:block' : ''
+          }`}
           title="Drag to move anywhere, click to open"
         >
           <button

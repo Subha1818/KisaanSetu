@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sprout, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { Logo } from './Logo';
 import { loadLanguageFont } from '../i18n';
 import { supabase } from '../lib/supabaseClient';
 
@@ -124,8 +125,8 @@ export const FirstVisitLanguageModal: React.FC = () => {
         <div className="relative text-center flex flex-col items-center">
           {/* Logo badge */}
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 border-2 border-amber-300/80">
-              <Sprout className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-2xl flex items-center justify-center shadow-md shadow-emerald-900/10 border-2 border-emerald-200/80">
+              <Logo className="w-8 h-8 sm:w-9 sm:h-9" />
             </div>
             <span className="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-emerald-800 to-teal-700 bg-clip-text text-transparent">
               KisaanSetu

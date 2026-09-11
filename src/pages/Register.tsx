@@ -4,6 +4,7 @@ import { Sprout, AlertCircle, CheckCircle2, Loader, ArrowLeft, Building2, Shield
 import { supabase } from '../lib/supabaseClient';
 import { useTranslation } from 'react-i18next';
 import { useCascadingGeo } from '../hooks/useCascadingGeo';
+import { Logo } from '../components/Logo';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -286,9 +287,9 @@ const Register: React.FC = () => {
           <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 rounded-full bg-emerald-950/40 blur-2xl"></div>
 
           <div className="relative z-10">
-            <Link to="/" className="flex items-center gap-2 group mb-12 inline-flex">
-              <div className="p-2 bg-white rounded-xl text-emerald-900 group-hover:scale-105 transition-all duration-300 shadow-xl">
-                <Sprout className="w-8 h-8" />
+            <Link to="/" className="flex items-center gap-3 group mb-12 inline-flex">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 shadow-xl">
+                <Logo className="w-10 h-10" />
               </div>
               <span className="font-extrabold text-2xl tracking-tight">
                 KisaanSetu

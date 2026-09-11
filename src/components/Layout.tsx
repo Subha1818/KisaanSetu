@@ -4,6 +4,7 @@ import { Sprout, Building2, Shield, LogIn, UserPlus, Globe, Menu, X, LogOut, Ale
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabaseClient';
 import { FirstVisitLanguageModal } from './FirstVisitLanguageModal';
+import { Logo } from './Logo';
 import { KisanAgentWidget } from './farmer/KisanAgentWidget';
 import { CentreAgentWidget } from './centre/CentreAgentWidget';
 
@@ -112,9 +113,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }`}>
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group shrink-0">
-              <div className="p-2 bg-emerald-600 rounded-xl text-white group-hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-600/20">
-                <Sprout className="w-6 h-6" />
+            <Link to="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center group-hover:scale-105 transition-all duration-300 shadow-md shadow-emerald-900/10 border border-emerald-200/60">
+                <Logo className="w-8 h-8" />
               </div>
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent hidden sm:block">
                 KisaanSetu

@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Sprout,
   Clock,
   CheckCircle,
   Languages,
@@ -11,6 +10,7 @@ import {
   Building
 } from 'lucide-react';
 import { LANDING_CONSTANTS } from '../config/constants';
+import { Logo } from '../components/Logo';
 
 const Landing: React.FC = () => {
   const { t } = useTranslation();
@@ -427,9 +427,9 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <Link to="/" className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-emerald-600 rounded-lg text-white">
-                  <Sprout className="w-5 h-5" />
+              <Link to="/" className="flex items-center gap-2.5 mb-4 group">
+                <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                  <Logo className="w-7 h-7" />
                 </div>
                 <span className="font-bold text-xl text-white tracking-tight">KisaanSetu</span>
               </Link>

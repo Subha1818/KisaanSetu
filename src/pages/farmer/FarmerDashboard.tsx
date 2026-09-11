@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History, Bot, Volume2, Star } from 'lucide-react';
+import { Calendar, Wheat, Clock, Award, AlertCircle, Loader, Building, Play, RefreshCw, XCircle, Download, CheckCircle2, History, Bot, Volume2, Star, Check, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useLiveQueue } from '../../hooks/useLiveQueue';
 import { RescheduleModal } from '../../components/farmer/RescheduleModal';
@@ -122,107 +122,6 @@ const speakBookingStatus = (token: string, status: string, peopleAhead: number, 
   window.speechSynthesis.speak(utterance);
 };
 
-// Lightweight Farmer-Friendly Visual Queue Stepper Component
-const FarmerStatusStepper: React.FC<{
-  status: string;
-  token: string;
-  peopleAhead: number;
-  arrivalWindow?: { earliestTime: string; latestTime: string } | null;
-  onAudioClick: () => void;
-}> = ({ status, token, peopleAhead, arrivalWindow, onAudioClick }) => {
-  const { t } = useTranslation();
-  const steps = [
-    { key: 'booked', label: t('dashboard.step_booked'), subLabel: 'Booked', icon: '🎟️' },
-    { key: 'called', label: t('dashboard.step_called'), subLabel: 'Head to Depot', icon: '🚜' },
-    { key: 'completed', label: t('dashboard.step_completed'), subLabel: 'Completed', icon: '✅' },
-  ];
-
-  const currentIdx = status === 'completed' ? 2 : status === 'called' || status === 'in_progress' ? 1 : 0;
-
-  return (
-    <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-emerald-700/50 mb-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-emerald-800/60">
-        <div>
-          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
-            {t('dashboard.easy_queue_tracker')}
-          </span>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-3xl font-black tracking-tight text-white">{token}</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-              status === 'called' ? 'bg-amber-400 text-slate-950 animate-pulse' :
-              status === 'in_progress' ? 'bg-indigo-400 text-slate-950' : 'bg-emerald-400 text-slate-950'
-            }`}>
-              {status === 'called' ? t('dashboard.status_called_badge') : status === 'in_progress' ? t('dashboard.status_in_progress_badge') : t('dashboard.status_queued_badge')}
-            </span>
-          </div>
-        </div>
-
-        {/* Listen Audio Button for farmers */}
-        <button
-          onClick={onAudioClick}
-          className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
-          title={t('dashboard.listen_status')}
-        >
-          <Volume2 className="w-4.5 h-4.5 text-slate-950 animate-bounce" />
-          <span>{t('dashboard.listen_status')}</span>
-        </button>
-      </div>
-
-      {/* 3-Step Visual Progress Bar */}
-      <div className="relative my-7 px-2">
-        <div className="absolute top-5 left-8 right-8 h-1.5 bg-emerald-950/90 rounded-full z-0" />
-        <div
-          className="absolute top-5 left-8 h-1.5 bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 rounded-full transition-all duration-700 z-0"
-          style={{ width: `${(currentIdx / 2) * 82}%` }}
-        />
-
-        <div className="flex justify-between items-center relative z-10">
-          {steps.map((s, idx) => {
-            const isDone = idx <= currentIdx;
-            const isCurrent = idx === currentIdx;
-            return (
-              <div key={s.key} className="flex flex-col items-center text-center">
-                <div
-                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-md ${
-                    isCurrent
-                      ? 'bg-amber-400 text-slate-950 scale-110 ring-4 ring-amber-300/40 font-bold'
-                      : isDone
-                      ? 'bg-emerald-500 text-white font-bold'
-                      : 'bg-emerald-950/90 text-emerald-600 border border-emerald-800'
-                  }`}
-                >
-                  {s.icon}
-                </div>
-                <span
-                  className={`text-xs font-black mt-2 leading-tight ${
-                    isCurrent ? 'text-amber-300 font-black' : isDone ? 'text-white' : 'text-emerald-500/70'
-                  }`}
-                >
-                  {s.label}
-                </span>
-                <span className="text-[10px] text-emerald-300/70 font-semibold">{s.subLabel}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Highlights */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
-        <div className="bg-emerald-950/60 border border-emerald-800/60 p-3 rounded-xl flex items-center justify-between">
-          <span className="text-emerald-300 font-bold">{t('dashboard.people_ahead')}:</span>
-          <span className="text-lg font-black text-amber-300">{peopleAhead}</span>
-        </div>
-        <div className="bg-emerald-950/60 border border-emerald-800/60 p-3 rounded-xl flex items-center justify-between">
-          <span className="text-emerald-300 font-bold">{t('dashboard.arrival_window')}:</span>
-          <span className="text-sm font-black text-white">
-            {arrivalWindow ? `${arrivalWindow.earliestTime} - ${arrivalWindow.latestTime}` : '...'}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const FarmerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -531,6 +430,29 @@ const FarmerDashboard: React.FC = () => {
     }
   };
 
+  const handleDownloadPass = async () => {
+    if (!activeBooking) return;
+    try {
+      setDownloadingId('token');
+      const timeWindow = arrivalWindow 
+        ? `${arrivalWindow.earliestTime} — ${arrivalWindow.latestTime}` 
+        : undefined;
+      await generateTokenPDF(activeBooking.id, timeWindow);
+    } catch (err) {
+      setError('Failed to download token PDF.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const mspSnapshotRows = mspRates && mspRates.length > 0
+    ? mspRates.slice(0, 3)
+    : [
+        { id: '1', crop_name: 'Wheat', rate_per_kg: 22.75 },
+        { id: '2', crop_name: 'Paddy', rate_per_kg: 21.83 },
+        { id: '3', crop_name: 'Maize', rate_per_kg: 20.90 }
+      ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -543,7 +465,7 @@ const FarmerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 relative z-0">
+    <div className="space-y-6 relative z-0 pb-24 md:pb-8">
       <DashboardBackground variant="farmer" />
       {/* Hero Welcome Banner */}
       <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white rounded-2xl p-5 sm:p-8 shadow-xl shadow-emerald-950/15 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -678,19 +600,12 @@ const FarmerDashboard: React.FC = () => {
 
       {/* Active Booking Block */}
       {activeBooking ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Appointment Details */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
-            {/* Easy Farmer Visual Tracker & Speech Assistant */}
-            <FarmerStatusStepper
-              status={activeBooking.status}
-              token={activeBooking.token}
-              peopleAhead={peopleAhead}
-              arrivalWindow={arrivalWindow}
-              onAudioClick={() => speakBookingStatus(activeBooking.token, activeBooking.status, peopleAhead, arrivalWindow, i18n.language)}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Main Appointment Details (md:col-span-2) */}
+          <div className="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8 shadow-xs space-y-6">
 
-            <div className="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
+            {/* Header: Title & Status */}
+            <div className="flex flex-wrap justify-between items-center gap-4 pb-5 border-b border-slate-100">
               <div>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wide">
                   {t('dashboard.upcoming_badge')}
@@ -710,27 +625,45 @@ const FarmerDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Token Highlight */}
+            {/* Token Highlight & Pass Action (Requirement 3: Download Pass PDF inside Ticket Card near QR / Token) */}
             <div className="bg-slate-50 rounded-2xl p-4 sm:p-6 border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-200 shrink-0">
-                  <QRCodeSVG value={activeBooking.id} size={80} level="M" />
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left w-full sm:w-auto">
+                <div className="p-2.5 bg-white rounded-xl shadow-xs border border-slate-200 shrink-0 min-w-[96px] min-h-[96px] flex items-center justify-center">
+                  <QRCodeSVG value={activeBooking.id} size={84} level="M" />
                 </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">{t('dashboard.queue_token')}</p>
-                  <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-1">{activeBooking.token}</p>
+                <div className="flex flex-col items-center sm:items-start gap-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">{t('dashboard.queue_token')}</p>
+                    <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-0.5">{activeBooking.token}</p>
+                  </div>
+                  {/* Download Pass PDF Button inside Ticket Card (Desktop / Tablet view) */}
+                  <button
+                    onClick={handleDownloadPass}
+                    disabled={downloadingId === 'token'}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl transition-all text-xs sm:text-sm shadow-xs cursor-pointer"
+                    aria-label={t('dashboard.download_pass_pdf')}
+                  >
+                    {downloadingId === 'token' ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    <span>{t('dashboard.download_pass_pdf')}</span>
+                  </button>
                 </div>
               </div>
-              <div className="text-center md:text-right">
+
+              <div className="text-center sm:text-right w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
                 <p className="text-xs font-semibold uppercase text-slate-400 tracking-wider">{t('dashboard.scheduled_date')}</p>
-                <p className="text-lg font-bold text-slate-900 mt-1 flex items-center gap-1.5 justify-center md:justify-end">
-                  <Calendar className="w-5 h-5 text-emerald-600" />
+                <p className="text-base sm:text-lg font-bold text-slate-900 mt-1 flex items-center gap-1.5 justify-center sm:justify-end">
+                  <Calendar className="w-5 h-5 text-emerald-600 shrink-0" />
                   {new Date(activeBooking.booking_dates.date).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
                   })}
                 </p>
+                {arrivalWindow && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Slot: {arrivalWindow.earliestTime} – {arrivalWindow.latestTime}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -758,22 +691,98 @@ const FarmerDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Live Queue Tracker */}
+            {/* Live Queue Status Card Container (Requirement 2: Progress strip inside here, above the 3 stat tiles) */}
             <div className="mt-8 pt-6 border-t border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Play className="w-4 h-4 text-indigo-600" />
-                {t('dashboard.live_queue')}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Play className="w-4 h-4 text-indigo-600" />
+                  {t('dashboard.live_queue')}
+                </h3>
+                {/* Audio Status Listen Button */}
+                <button
+                  onClick={() => speakBookingStatus(activeBooking.token, activeBooking.status, peopleAhead, arrivalWindow, i18n.language)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
+                  title={t('dashboard.listen_status')}
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-amber-700" />
+                  <span>{t('dashboard.listen_status')}</span>
+                </button>
+              </div>
+
+              {/* Compact 3-Step Horizontal Progress Strip */}
+              {(() => {
+                const currentIdx = activeBooking.status === 'completed' ? 2 : activeBooking.status === 'called' || activeBooking.status === 'in_progress' ? 1 : 0;
+                const steps = [
+                  { id: 'booked', label: 'Booked' },
+                  { id: 'called', label: 'Head to Depot' },
+                  { id: 'completed', label: 'Weighing Completed' }
+                ];
+                return (
+                  <div className="w-full bg-slate-50/90 border border-slate-200/80 rounded-xl p-3 sm:p-4 mb-4 overflow-x-auto">
+                    <div className="min-w-[280px] sm:min-w-0 relative flex items-center justify-between px-2 sm:px-6">
+                      {/* Connecting Line Track */}
+                      <div className="absolute top-3.5 left-8 right-8 h-0.5 bg-slate-200 z-0" />
+                      <div
+                        className="absolute top-3.5 left-8 h-0.5 bg-emerald-500 transition-all duration-500 z-0"
+                        style={{ width: `${(currentIdx / 2) * 85}%` }}
+                      />
+
+                      {steps.map((s, idx) => {
+                        const isDone = idx < currentIdx || (currentIdx === 2 && idx === 2);
+                        const isCurrent = idx === currentIdx && !isDone;
+
+                        return (
+                          <div key={s.id} className="flex flex-col items-center text-center relative z-10">
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                                isDone
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : isCurrent
+                                  ? 'bg-emerald-600 text-white ring-4 ring-emerald-200/70 shadow-xs'
+                                  : 'bg-white border-2 border-slate-300 text-slate-300'
+                              }`}
+                            >
+                              {isDone ? (
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              ) : isCurrent ? (
+                                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                              ) : (
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                              )}
+                            </div>
+                            <span
+                              className={`text-xs mt-1.5 font-bold whitespace-nowrap ${
+                                isCurrent
+                                  ? 'text-emerald-800'
+                                  : isDone
+                                  ? 'text-slate-800'
+                                  : 'text-slate-400'
+                              }`}
+                            >
+                              {s.label}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {isDone ? 'Completed' : isCurrent ? 'Active' : 'Upcoming'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 3 Stat Tiles */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 sm:p-5">
                   <span className="text-xs text-indigo-600 font-extrabold uppercase">{t('dashboard.now_serving')}</span>
                   <p className="text-2xl font-black text-indigo-900 mt-1">{nowServing}</p>
                 </div>
-                <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-5">
+                <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 sm:p-5">
                   <span className="text-xs text-amber-600 font-extrabold uppercase">{t('dashboard.people_ahead')}</span>
                   <p className="text-2xl font-black text-amber-900 mt-1">{peopleAhead}</p>
                 </div>
-                <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-5 relative overflow-hidden">
+                <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-4 sm:p-5 relative overflow-hidden">
                   <Clock className="w-16 h-16 text-teal-500/10 absolute -right-2 -bottom-2" />
                   <span className="text-xs text-teal-700 font-extrabold uppercase relative z-10">Estimated Arrival</span>
                   <p className="text-lg font-black text-teal-900 mt-1 tracking-tight leading-tight relative z-10">
@@ -791,65 +800,49 @@ const FarmerDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Info Sidebar */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm flex flex-col justify-between">
+          {/* Right Column: Instructions, Secondary Actions & MSP Price Snapshot (md:col-span-1) */}
+          <div className="md:col-span-1 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs flex flex-col justify-between gap-6">
+            {/* 4a. Gate Pass Instructions */}
             <div>
-              <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">{t('dashboard.instructions')}</h3>
-              <ul className="mt-4 space-y-3.5 text-sm text-slate-600">
-                <li className="flex gap-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-2"></span>
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-slate-900">{t('dashboard.instructions')}</h3>
+              </div>
+              <ul className="mt-3.5 space-y-3 text-xs sm:text-sm text-slate-600">
+                <li className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-2" />
                   <span>{t('dashboard.instr_1')}</span>
                 </li>
-                <li className="flex gap-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-2"></span>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-2" />
                   <span>{t('dashboard.instr_2')}</span>
                 </li>
-                <li className="flex gap-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-2"></span>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-2" />
                   <span>{t('dashboard.instr_3', { token: activeBooking.token })}</span>
                 </li>
               </ul>
             </div>
-            
-            <div className="mt-6 pt-6 border-t border-slate-100 space-y-3">
-              <button 
-                onClick={async () => {
-                  try {
-                    setDownloadingId('token');
-                    const timeWindow = arrivalWindow 
-                      ? `${arrivalWindow.earliestTime} — ${arrivalWindow.latestTime}` 
-                      : undefined;
-                    await generateTokenPDF(activeBooking.id, timeWindow);
-                  } catch (err) {
-                    setError('Failed to download token PDF.');
-                  } finally {
-                    setDownloadingId(null);
-                  }
-                }}
-                disabled={downloadingId === 'token'}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 min-h-[48px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-base sm:text-sm shadow-md cursor-pointer"
-              >
-                {downloadingId === 'token' ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {t('dashboard.download_pass_pdf')}
-              </button>
-              
+
+            {/* 4b. Secondary / Outlined Style Action Buttons */}
+            <div className="pt-4 border-t border-slate-100 space-y-2.5">
               {isCancellable ? (
                 <>
-                  <button 
+                  <button
                     onClick={() => setIsRescheduleModalOpen(true)}
                     aria-label={t('dashboard.reschedule')}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 min-h-[48px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-colors text-base sm:text-sm cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-indigo-50/50 hover:bg-indigo-100/70 text-indigo-700 font-bold rounded-xl border border-indigo-200 transition-colors text-xs sm:text-sm cursor-pointer active:scale-95"
                   >
-                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                    {t('dashboard.reschedule')}
+                    <RefreshCw className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+                    <span>{t('dashboard.reschedule')}</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsCancelModalOpen(true)}
                     aria-label={t('dashboard.cancel_booking')}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3.5 min-h-[48px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition-colors text-base sm:text-sm cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-rose-50/50 hover:bg-rose-100/70 text-rose-700 font-bold rounded-xl border border-rose-200 transition-colors text-xs sm:text-sm cursor-pointer active:scale-95"
                   >
-                    <XCircle className="w-4 h-4" aria-hidden="true" />
-                    {t('dashboard.cancel_booking')}
+                    <XCircle className="w-4 h-4 text-rose-600" aria-hidden="true" />
+                    <span>{t('dashboard.cancel_booking')}</span>
                   </button>
                 </>
               ) : (
@@ -859,6 +852,41 @@ const FarmerDashboard: React.FC = () => {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* 4c. Compact 2-3 Row MSP Price Snapshot */}
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Wheat className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">MSP Snapshot</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('msp');
+                    const mspElem = document.getElementById('farmer-tabs-section');
+                    if (mspElem) {
+                      mspElem.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
+                >
+                  View All →
+                </button>
+              </div>
+              <div className="bg-slate-50/80 rounded-xl border border-slate-100 divide-y divide-slate-100 text-xs">
+                {mspSnapshotRows.map((crop) => (
+                  <div key={crop.id || crop.crop_name} className="flex items-center justify-between px-3 py-2">
+                    <span className="font-semibold text-slate-700">{crop.crop_name}</span>
+                    <div className="text-right font-mono">
+                      <span className="font-bold text-emerald-800">
+                        ₹{(Number(crop.rate_per_kg) * 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </span>
+                      <span className="text-[10px] text-slate-400 ml-1 font-sans">/qtl</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -888,8 +916,72 @@ const FarmerDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* 5. Mobile Sticky Bottom Action Bar (when activeBooking exists) */}
+      {activeBooking && (
+        <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 py-2 z-40 md:hidden shadow-lg flex items-center justify-between gap-2 safe-bottom">
+          {/* Docked AI Saathi Icon (min touch target 44x44px) */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-kisan-ai'))}
+            className="flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-2 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 active:scale-95 transition-all cursor-pointer shrink-0"
+            aria-label="Open Kisaan Saathi AI"
+          >
+            <div className="relative">
+              <Bot className="w-4 h-4 text-emerald-700" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber-400 rounded-full" />
+            </div>
+            <span className="text-[10px] font-bold text-emerald-900 leading-tight">AI Saathi</span>
+          </button>
+
+          {/* Download Pass Button */}
+          <button
+            onClick={handleDownloadPass}
+            disabled={downloadingId === 'token'}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs shadow-xs transition-all cursor-pointer truncate"
+          >
+            {downloadingId === 'token' ? <Loader className="w-4 h-4 animate-spin shrink-0" /> : <Download className="w-4 h-4 shrink-0" />}
+            <span className="truncate">Download Pass</span>
+          </button>
+
+          {/* Reschedule Button */}
+          {isCancellable && (
+            <button
+              onClick={() => setIsRescheduleModalOpen(true)}
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl border border-indigo-200 text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
+              aria-label={t('dashboard.reschedule')}
+              title={t('dashboard.reschedule')}
+            >
+              <RefreshCw className="w-4 h-4 text-indigo-600" />
+            </button>
+          )}
+
+          {/* Cancel Button */}
+          {isCancellable && (
+            <button
+              onClick={() => setIsCancelModalOpen(true)}
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-2.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200 text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
+              aria-label={t('dashboard.cancel_booking')}
+              title={t('dashboard.cancel_booking')}
+            >
+              <XCircle className="w-4 h-4 text-rose-600" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Docked AI Saathi on mobile when no active appointment */}
+      {!activeBooking && (
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-kisan-ai'))}
+          className="fixed bottom-4 right-4 z-40 md:hidden flex items-center gap-2 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white px-4 py-2.5 rounded-full shadow-lg border border-emerald-500/30 active:scale-95 transition-all cursor-pointer min-h-[44px]"
+          aria-label="Open Kisaan Saathi AI"
+        >
+          <Bot className="w-5 h-5 text-amber-300" />
+          <span className="text-xs font-bold">Kisaan Saathi AI</span>
+        </button>
+      )}
+
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 mt-8 mb-6">
+      <div id="farmer-tabs-section" className="flex border-b border-slate-200 mt-8 mb-6">
         <button
           onClick={() => setActiveTab('history')}
           className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
